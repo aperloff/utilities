@@ -1,0 +1,9 @@
+#!/bin/bash
+
+#List of files
+#Last two arguemts are passed to sed in order to rename the files
+
+for FILE in ${@:1:$# - 2}; do
+    NEWFILE=`echo "$FILE" | sed "s|${@: -2:1}|${@: -1}|"`
+    mv -i -v $FILE $NEWFILE
+done
