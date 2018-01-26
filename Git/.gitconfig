@@ -8,4 +8,4 @@
 	lol = log --graph --decorate --pretty=oneline --abbrev-commit
 	fix = commit --amend --no-edit
 [core]
-	excludesfile = /uscms/home/aperloff/.gitignore_global
+	excludesfile = /uscms/homes/a/aperloff/.gitignore_global

@@ -11,9 +11,11 @@ function get_script_path() {
 	echo "$SCRIPT_PATH"
 }
 
-files=("rootlogon.C" ".rootrc")
+declare -A files=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
+                   [".gitconfig"]="Git" [".gitignore_global"]="Git" \
+                   [".k5login"]="Login" [".login"]="Login" [".emacs"]="Login" [".forward"]="Login" [".profile"]="Login" ) 
 
-for file in "${files[@]}"; do
+for file in "${!files[@]}"; do
 	if [ -L ${HOME}/${file} ]; then
 		echo "Refreshing the \"${file}\" symlink."
 		unlink ${HOME}/${file}
@@ -23,5 +25,5 @@ for file in "${files[@]}"; do
 	else
 		echo "Making the \"${file}\" symlink"
 	fi
-	ln -s $(get_script_path)/ROOT/${file} ${HOME}/${file}
+	ln -s $(get_script_path)/${files[$file]}/${file} ${HOME}/${file}
 done
