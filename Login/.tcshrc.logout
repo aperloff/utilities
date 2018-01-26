@@ -1,0 +1,16 @@
+set histsize = `stat ~/.history | grep Size | awk '{print $2}'`
+set oldhistlist = `stat ~/.history_backup | grep Size | awk '{print $2}'`
+if ( $histsize >= $oldhistlist ) then
+    /bin/cp ~/.history ~/.history_backup
+endif
+set histlen = `cat ~/.history | wc -l`
+if ( $histlen >= `echo "$history*2" | bc` ) then
+    head -n $history ~/.history >> ~/.history_archive
+    set histsave = `echo $histlen - $history | bc`
+    tail -n $histsave ~/.history >&! ~/.history_temp
+    /bin/mv ~/.history_temp ~/.history
+    history -c
+    history -L
+endif
+history -S
+echo "History Saved"
