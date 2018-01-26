@@ -14,13 +14,13 @@ function get_script_path() {
 files=("rootlogon.C" ".rootrc")
 
 for file in "${files[@]}"; do
-	if [ -L ${HOME}/${file} ]; then
-		echo "Refreshing the \"${file}\" symlink."
-		unlink ${HOME}/${file}
-	fi
 	if [ -z ${HOME}/${file} ]; then
 		echo "Abort, a regular file called \"${file}\" already exists at ${HOME}"
 		exit 1
+	fi
+	if [ -L ${HOME}/${file} ]; then
+		echo "Refreshing the \"${file}\" symlink."
+		unlink ${HOME}/${file}
 	fi
 	ln -s $(get_script_path)/ROOT/${file} ${HOME}/${file}
 done
