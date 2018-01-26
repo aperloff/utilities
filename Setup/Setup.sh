@@ -18,8 +18,14 @@ array_contains () {
 
 #Select the correct project
 COLUMNS=80
-NOBACKUP_AREA="/uscms_data/d2/aperloff/YOURWORKINGAREA/"
-PROJECTS=(${NOBACKUP_AREA}/*/)
+if [[ ${HOSTNAME} = *"cmslpc"* ]]; then
+  WORKING_AREA="/uscms_data/d2/aperloff/YOURWORKINGAREA/"
+elif [[ ${HOSTNAME} = *"brazos"* ]]; then
+  WORKING_AREA="${HOME}"
+elif [[ ${HOSTNAME} = *"alexx"* ]]; then
+  WORKING_AREA="/Applications/"
+fi
+PROJECTS=(${WORKING_AREA}/*/)
 for ((i=0; i<${#PROJECTS[@]}; i++)); do
   PROJECTS[$i]="$(basename ${PROJECTS[$i]})"
 done
@@ -69,7 +75,7 @@ COLUMNS=12
 declare RELEASE_PATHS=()
 declare scram_arch=()
 for p in ${PROJECT_PATHS[@]}; do
-	RELEASE_PATHS+=(${NOBACKUP_AREA}/${p}/*/)
+	RELEASE_PATHS+=(${WORKING_AREA}/${p}/*/)
 done
 
 #Sort the releases
