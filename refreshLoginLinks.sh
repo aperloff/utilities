@@ -14,7 +14,7 @@ function get_script_path() {
 files=("rootlogon.C" ".rootrc")
 
 for file in "${files[@]}"; do
-	if [ -z ${HOME}/${file} ]; then
+	if [ ! -f ${HOME}/${file} ]; then
 		echo "Abort, a regular file called \"${file}\" already exists at ${HOME}"
 		exit 1
 	fi
