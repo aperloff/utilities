@@ -28,10 +28,6 @@ PS3="$prompt "
 echo "Which project do you want to work on? (Default = JEC)"; \
 select proj in "${PROJECTS[@]}"; do
   case $proj in
-        "$QUIT")
-          echo "Abort."
-          break
-          ;;
         "4BBFF")
           PROJECT_PATHS=("4BBFF/")
           break
@@ -61,7 +57,8 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
         *)
-          echo "invalid option"
+          echo "invalid option!!!"
+          echo "Look, it's a simple question..."
           ;;
   esac
 done
