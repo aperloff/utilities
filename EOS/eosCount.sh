@@ -7,19 +7,23 @@ usage: $0 [options] <path>
 
 This script will find and count all of the files starting from a given EOS path.
 The path must be provided as the first positional argument after the names options.
-By default files with the words "failed" and "log" in the path name are skipped. 
+By default files with the words "failed" and "log" in the path name are skipped.
 
 OPTIONS:
+	-a      Does not skip any files, including CRAB files in the "failed" and "log" directories
 	-e      The extension of the files to search for (defaul=".root")
 	-h      Show this message
-	-l      List the files rather than counting them
+	-l      List the files rather than counting them      
 EOF
 }
 
 extension=".root"
-while getopts e:hl OPTION
+while getopts ae:hl OPTION
 do
 	case $OPTION in
+		a)
+			skip="false"
+			;;
 		e)
 			if [[ ${OPTARG:0:1} == "." ]]; then
 				extension=${OPTARG}
@@ -55,10 +59,12 @@ fi
 
 cmd="eos root://cmseos.fnal.gov/ find ${PARG1}"
 
-words_to_skip=( "failed" "log")
-for word in ${words_to_skip[@]}; do
-	cmd+=" | grep -v ${word}"
-done
+if [[ "$skip" != false ]];then
+	words_to_skip=( "failed" "log")
+	for word in ${words_to_skip[@]}; do
+		cmd+=" | grep -v ${word}"
+	done
+fi
 
 cmd+=" | grep -F ${extension}"
 
