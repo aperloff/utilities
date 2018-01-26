@@ -1,0 +1,11 @@
+[user]
+	name = Alexx Perloff
+	email = Alexx.Perloff@Colorado.edu
+	github = aperloff
+[color]
+	ui = true
+[alias]
+	lol = log --graph --decorate --pretty=oneline --abbrev-commit
+	fix = commit --amend --no-edit
+[core]
+	excludesfile = /uscms/home/aperloff/.gitignore_global

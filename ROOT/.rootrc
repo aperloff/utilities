@@ -1,0 +1,2 @@
+# Rint (interactive ROOT executable) specific alias, logon and logoff macros.
+Rint.Logon:              $HOME/rootlogon.C
