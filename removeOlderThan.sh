@@ -8,12 +8,12 @@ usage: $0 options
 This script will delete all files older than a certain number of days and matching a given pattern.
 
 OPTIONS:
-   -h      Show this message
-   -d      The number of days to go back before deleting files. Use +DAYS to delete older files and -DAYS to delete files from today.
-   -n      Name of the files (can include wildcards)
-   -p      Path to the files
-   -t      Test the file selection before removing
-   -v      Verbose
+	-h      Show this message
+	-d      The number of days to go back before deleting files. Use +DAYS to delete older files and -DAYS to delete files from today.
+	-n      Name of the files (can include wildcards)
+	-p      Path to the files
+	-t      Test the file selection before removing
+	-v      Verbose
 EOF
 }
 
@@ -21,9 +21,9 @@ while getopts :hd:n:p:tv OPTION
 do
 	case $OPTION in
 		h)
-             usage
-             exit 1
-             ;;
+			 usage
+			 exit 1
+			 ;;
 		d)
 			DAYS=$OPTARG
 			;;
@@ -40,15 +40,15 @@ do
 			TEST=true
 			echo -e "The selected files will be printed without being deleted\n"
 			;;
-	    \?)
-    		echo "Invalid option: -$OPTARG" >&2
-	    	exit 1
-		    ;;
+		\?)
+			echo "Invalid option: -$OPTARG" >&2
+			exit 1
+			;;
 		:)
 			echo "Option -$OPTARG requires an argument." >&2
 			exit 1
 			;;
-     esac
+	 esac
 done
 
 if [ -z "$DAYS" ] ; then
