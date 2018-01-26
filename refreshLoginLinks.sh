@@ -13,7 +13,9 @@ function get_script_path() {
 
 declare -A files=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
                    [".gitconfig"]="Git" [".gitignore_global"]="Git" \
-                   [".k5login"]="Login" [".login"]="Login" [".emacs"]="Login" [".forward"]="Login" [".profile"]="Login" ) 
+                   [".k5login"]="Login" [".login"]="Login" [".emacs"]="Login" [".forward"]="Login" [".profile"]="Login" \
+                   [".cshrc"]="Login" [".tcshrc.complete"]="Login" [".tcshrc.logout"]="Login" \
+                   [".bashrc"]="Login" [".bash_profile"]="Login" [".bash_ps1"]="Login" )
 
 for file in "${!files[@]}"; do
 	if [ -L ${HOME}/${file} ]; then
