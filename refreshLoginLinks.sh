@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function get_script_path() {
-	local SCRIPT_PATH="`dirname \"$0\"`"              # relative
+	local SCRIPT_PATH="`dirname \"$0\"`"            # relative
 	SCRIPT_PATH="`( cd \"$SCRIPT_PATH\" && pwd )`"  # absolutized and normalized
 	if [ -z "$SCRIPT_PATH" ] ; then
 	  # error; for some reason, the path is not accessible
