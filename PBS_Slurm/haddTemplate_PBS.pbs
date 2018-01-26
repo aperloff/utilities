@@ -1,0 +1,13 @@
+#!/bin/sh
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=24:00:00
+#PBS -q <pertition or queue>
+#PBS -t <array range>
+#PBS -M <email address>
+cd <CMSSW_BASE>/src/
+export SCRAM_ARCH=<SCRAM_ARCH>
+eval `scramv1 runtime -sh`
+cd <path to files>
+hadd <output filename>.root <input filenames>*.root
+
+exit 0
