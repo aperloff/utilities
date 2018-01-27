@@ -157,12 +157,8 @@ setenv EMEResults Winter12to13ME8TeV/rootOutput/
 setenv SMEInput $EOS/MatrixElement/Summer12ME8TeV/MEInput/
 setenv SMEResults $EOS/MatrixElement/Summer12ME8TeV/MEResults/
 setenv ESMEResults $EEOS/Winter12to13ME8TeV/rootOutput/
-#xrdfs can use ls, mkdir, rm, rmdir, cat, tail, some 'querey' (checksum for example), stat, ...
+#xrdfs can use ls, mkdir, rm, rmdir, cat, tail, some 'query' (checksum for example), stat, ...
 #Example: xrdfs root://cmseos.fnal.gov/ ls /store/user/aperloff
-#Example: xrdfs ls /store/user/aperloff
-#alias xrdfs 'xrdfs root://cmseos.fnal.gov/'
-#Example: eosdu aperloff
-alias eosdu 'eos root://cmseos.fnal.gov/ quota | grep -a5'
 #Example: eosfind /store/user/aperloff
 alias eosfind 'eos root://cmseos.fnal.gov/ find'
 setenv EE /eos/uscms/store/user/eusebi/
@@ -170,7 +166,6 @@ setenv JME /eos/uscms/store/user/lpcjme/
 setenv MBJA /eos/uscms/store/user/lpcmbja/
 setenv LNUJJ /eos/uscms/store/user/lnujj/
 alias rxrdcp 'python ~/Scripts/movefiles.py'
-alias eosq 'eos root://cmseos.fnal.gov quota | grep -C5'
 alias eosinfo 'eos root://cmseos.fnal.gov/ fileinfo'
 alias xrdfsloc 'xrdfs cms-xrd-global.cern.ch locate -h -d'
 
