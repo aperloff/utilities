@@ -160,6 +160,7 @@ setenv ESMEResults $EEOS/Winter12to13ME8TeV/rootOutput/
 #xrdfs can use ls, mkdir, rm, rmdir, cat, tail, some 'query' (checksum for example), stat, ...
 #Example: xrdfs root://cmseos.fnal.gov/ ls /store/user/aperloff
 #Example: eosfind /store/user/aperloff
+alias eosdu '$HOME/Scripts/utilities/EOS/eosdu'
 alias eosfind 'eos root://cmseos.fnal.gov/ find'
 setenv EE /eos/uscms/store/user/eusebi/
 setenv JME /eos/uscms/store/user/lpcjme/
