@@ -80,39 +80,40 @@ ${PWD}/utilities/refreshLoginLinks.sh
 
 <a name="available-scripts"></a>
 ## Available Scripts
-| *Name*                    | *Directory* | *Description*                                            | *Help Message Available* | *Example Usage*                   |
-|:--------------------------|:------------|:---------------------------------------------------------|:-------------------------|:----------------------------------|
-| _clearUnwantedFiles.sh_   | ./          | Delete a selection of unwanted files (i.e. \*.txt~)      | Yes                      |  ```./clearUnwantedFiles.sh -h``` |
-| _copyDirectories.sh_      | ./          | Copy directory structure from one location to another    | Yes                      |  ```./copyDirectories.sh -h```    |
-| _countFoldersAndFiles.sh_ | ./          | Count the numbe of files, folders, and links             | Yes                      |  ```countFoldersAndFiles.sh -h``` |
-| _duSort.sh_               | ./          | Sort a list of files by size                             | No                       |                                   |
-| _grepMissingWord.sh_      | ./          | Grep for all files missing a specific work               | Yes                      |                                   |
-| _mcp.sh_                  | ./          |                                                          | Yes                      |                                   |
-| _refreshLoginLinks.sh_    | ./          | Setup the links for this package in a users ${HOME} area | No                       | ```./refreshLoginLinks.sh```      |
-| _removeOlderThan.sh_      | ./          | Remove files older than a specific date                  | Yes                      |                                   |
-| _renameLinks.sh_          | ./          | Rename a set of links                                    | No                       |                                   |
-| _smv_                     | ./          |                                                          | No                       |                                   |
-| _TDRCompile.sh_           | ./          | Used after TDRSetup.sh to compile a CMS document         | No                       | ```source TDRCompile.sh```        |
-| _TDRSetup.sh_             | ./          | Used to setup ones working area for a CMS document       | No                       | ```source TDRSetup.sh```          |
-| _eosCount.sh_             | EOS/        | Counts or lists all files using "eos find"               | Yes                      | ```./eosCount.sh <path>```        |
-| _.gitconfig_              | Git/        | Git global configuration file                            | No                       | <N/A>                             |
-| _.gitignore\_global_      | Git/        | Git global ignore list                                   | No                       | <N/A>                             |
-| _.bash\_profile_          | Login/      | bash login script                                        | No                       | <N/A>                             |
-| _.bash\_ps1_              | Login/      | pack prompt script                                       | No                       | <N/A>                             |
-| _.bashrc_                 | Login/      | bash login script                                        | No                       | <N/A>                             |
-| _.cshrc_                  | Login/      | (t)csh login script                                      | No                       | <N/A>                             |
-| _.emacs_                  | Login/      | emacs configuration                                      | No                       | <N/A>                             |
-| _.forward_                | Login/      | Email forwarding                                         | No                       | <N/A>                             |
-| _.k5login_                | Login/      | Kerberos configuration                                   | No                       | <N/A>                             |
-| _.login_                  | Login/      | iterm2 login script                                      | No                       | <N/A>                             |
-| _.profile_                | Login/      | Login script                                             | No                       | <N/A>                             |
-| _.tcshrc.complete_        | Login/      | tcsh script                                              | No                       | <N/A>                             |
-| _.tcshrc.logout_          | Login/      | tcsh logout script                                       | No                       | <N/A>                             |
-| _ahadd.py_                | ROOT/       | Parallelizes the hadd process for ROOT files             | Yes                      | ```python ahadd.py```             |
-| _.rootrc_                 | ROOT/       | ROOT setup script                                        | No                       | <N/A>                             |
-| _rootlogon.C_             | ROOT/       | Global ROOT logon script                                 | No                       | <N/A>                             |
-| _FPGASetup.csh_           | Setup/      | Setup/login to the computer with an Xilinx FPGA          | No                       | ```source FPGASetup.csh```        |
-| _Setup.sh_                | Setup/      | Setup a CMSSW/CRAB environment for a given project       | No                       | ```source Setup.sh```             |
+| *Name*                    | *Directory* | *Description*                                            | *Help Message Available* | *Example Usage*                      |
+|:--------------------------|:------------|:---------------------------------------------------------|:-------------------------|:-------------------------------------|
+| _clearUnwantedFiles.sh_   | ./          | Delete a selection of unwanted files (i.e. \*.txt~)      | Yes                      |  ```./clearUnwantedFiles.sh -h```    |
+| _copyDirectories.sh_      | ./          | Copy directory structure from one location to another    | Yes                      |  ```./copyDirectories.sh -h```       |
+| _countFoldersAndFiles.sh_ | ./          | Count the numbe of files, folders, and links             | Yes                      |  ```countFoldersAndFiles.sh -h```    |
+| _duSort.sh_               | ./          | Sort a list of files by size                             | No                       |                                      |
+| _grepMissingWord.sh_      | ./          | Grep for all files missing a specific work               | Yes                      |                                      |
+| _mcp.sh_                  | ./          |                                                          | Yes                      |                                      |
+| _refreshLoginLinks.sh_    | ./          | Setup the links for this package in a users ${HOME} area | No                       | ```./refreshLoginLinks.sh```         |
+| _removeOlderThan.sh_      | ./          | Remove files older than a specific date                  | Yes                      |                                      |
+| _renameLinks.sh_          | ./          | Rename a set of links                                    | No                       |                                      |
+| _smv_                     | ./          |                                                          | No                       |                                      |
+| _TDRCompile.sh_           | ./          | Used after TDRSetup.sh to compile a CMS document         | No                       | ```source TDRCompile.sh```           |
+| _TDRSetup.sh_             | ./          | Used to setup ones working area for a CMS document       | No                       | ```source TDRSetup.sh```             |
+| _eosCount.sh_             | EOS/        | Counts or lists all files using "eos find"               | Yes                      | ```./eosCount.sh <path>```           |
+| _eosdu_                   | EOS/        | Gets the number of files in and size of an EOS directory | Yes                      | ```eosdu -h -r /store/user/<path>``` |
+| _.gitconfig_              | Git/        | Git global configuration file                            | No                       | <N/A>                                |
+| _.gitignore\_global_      | Git/        | Git global ignore list                                   | No                       | <N/A>                                |
+| _.bash\_profile_          | Login/      | bash login script                                        | No                       | <N/A>                                |
+| _.bash\_ps1_              | Login/      | pack prompt script                                       | No                       | <N/A>                                |
+| _.bashrc_                 | Login/      | bash login script                                        | No                       | <N/A>                                |
+| _.cshrc_                  | Login/      | (t)csh login script                                      | No                       | <N/A>                                |
+| _.emacs_                  | Login/      | emacs configuration                                      | No                       | <N/A>                                |
+| _.forward_                | Login/      | Email forwarding                                         | No                       | <N/A>                                |
+| _.k5login_                | Login/      | Kerberos configuration                                   | No                       | <N/A>                                |
+| _.login_                  | Login/      | iterm2 login script                                      | No                       | <N/A>                                |
+| _.profile_                | Login/      | Login script                                             | No                       | <N/A>                                |
+| _.tcshrc.complete_        | Login/      | tcsh script                                              | No                       | <N/A>                                |
+| _.tcshrc.logout_          | Login/      | tcsh logout script                                       | No                       | <N/A>                                |
+| _ahadd.py_                | ROOT/       | Parallelizes the hadd process for ROOT files             | Yes                      | ```python ahadd.py```                |
+| _.rootrc_                 | ROOT/       | ROOT setup script                                        | No                       | <N/A>                                |
+| _rootlogon.C_             | ROOT/       | Global ROOT logon script                                 | No                       | <N/A>                                |
+| _FPGASetup.csh_           | Setup/      | Setup/login to the computer with an Xilinx FPGA          | No                       | ```source FPGASetup.csh```           |
+| _Setup.sh_                | Setup/      | Setup a CMSSW/CRAB environment for a given project       | No                       | ```source Setup.sh```                |
 
 <details><summary>Obsolete Scripts</summary>
 <p>
