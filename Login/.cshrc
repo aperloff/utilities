@@ -133,6 +133,8 @@ alias ct 'condor_tail -maxbytes 1024000'
 alias cpDir '~/Scripts/utilities/copyDirectories.sh'
 alias subLimHist '~/Scripts/utilities/TAMUWW/submitLimitHistograms.sh'
 alias subSysHist '~/Scripts/utilities/TAMUWW/submitSysHistograms.sh'
+alias globus_start '~/globusconnectpersonal-2.3.3/globusconnectpersonal -start -restrict-paths rw/uscms_data/d2/aperloff/ &'
+alias globus_status '~/globusconnectpersonal-2.3.3/globusconnectpersonal -status'
 
 alias ME 'source ~/Scripts/utilities/Setup/MatrixElementSetup.csh'
 alias jec 'source ~/Scripts/utilities/Setup/JECSetup.csh'
