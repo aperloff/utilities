@@ -41,11 +41,8 @@ while getopts "hn:z" OPTION; do
 done
 
 shift $(($OPTIND - 1))
-#files_folders=$1
 files_folders=( "$@" )
 files_folders_string=$( join_by " " "${files_folders[@]}" )
-echo "these are the files/folders found: ${files_folders_string}"
-echo "this is the NAME variable: ${NAME}"
 
 if [ "$NAMESET" != "true" ]; then
     NAME="tarp_output.tar"
@@ -59,5 +56,3 @@ if [ -n "$GZIP" ]; then
 else
     tar cfP - ${files_folders_string} | pv -s $(($(du -sk ${files_folders_string} | awk 'BEGIN{sum=0}{sum=sum+$1}END{print sum}') * 1024)) > ${NAME}
 fi
-
-#tar cf - Singl/ -P | pv -s $(($(du -sk Singl/ | awk '{print $1}') * 1024)) | gzip > Singl.tar.gz 
