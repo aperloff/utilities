@@ -18,22 +18,20 @@ DEPTH=1
 LOCATION=$PWD
 while getopts "hd:l:" OPTION; do
     case "$OPTION" in
-	h)  usage
-	    exit 1
-	    ;;
-	d)  DEPTH=$OPTARG
-	    ;;
-	l)  LOCATION=${OPTARG}
-	    ;;
-	\?)
-            echo "Invalid option: -$OPTARG" >&2
-	    usage
-            exit 2
-            ;;
-        :)
-            echo "Option -$OPTARG requires an argument." >&2
-            exit 3
-            ;;
+    h)  usage
+        exit 1
+        ;;
+    d)  DEPTH=$OPTARG
+        ;;
+    l)  LOCATION=${OPTARG}
+        ;;
+    \?) echo "Invalid option: -$OPTARG" >&2
+        usage
+        exit 2
+        ;;
+    :)  echo "Option -$OPTARG requires an argument." >&2
+        exit 3
+        ;;
     esac
 done
 
