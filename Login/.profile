@@ -1,5 +1,7 @@
-source /uscmst1/prod/sw/cms/shrc prod
-echo "HOME variable is originally set to '$HOME'"
-#export HOME=/uscms/home/aperloff
+#echo "HOME variable is originally set to '$HOME'"
 export HOME=`pwd`
-echo "HOME variable is now set to `pwd`"
+echo "   ##########################################################################"
+echo "    Setting HOME to ${HOME}"
+echo "   ##########################################################################"
+
+test -e "${HOME}/.iterm2_shell_integration.sh" && source "${HOME}/.iterm2_shell_integration.sh"

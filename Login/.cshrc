@@ -16,12 +16,6 @@
 #endif
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# start ssh-agent
-if ( ! $?SSH_AGENT_PID ) then
-  eval `ssh-agent -c` > /dev/null
-endif
-alias addkey 'ssh-add ~/.ssh/id_rsa'
-
 # Place any items that you want executed even for non-interactive use here
 
 #skip if not interactive shell
@@ -92,21 +86,12 @@ if ( $?prompt ) then
 	  setenv LD_LIBRARY_PATH ${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
 
     else
-
       setenv LD_LIBRARY_PATH ${ROOTSYS}/lib:.
       setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${ROOFITSYS}/lib:.
 	  setenv LD_LIBRARY_PATH ${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
 
     endif
-
-	#source /uscmst1/prod/grid/gLite_SL5.csh
-else
-    #source /uscmst1/prod/sw/cms/cshrc prod
-	#source /uscmst1/prod/grid/gLite_SL5.csh
-	#source /uscmst1/prod/grid/CRAB/crab.csh
-
 endif
-#setenv XLIB_SKIP_ARGB_VISUALS 1
 
 #when using slc6_amd64_gcc700 use this as well --suppressions=$PYTHON_VALGRIND_SUPP
 alias valgrindcms 'valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --suppressions=$ROOTSYS/etc/valgrind-root.supp --track-origins=yes'
@@ -123,6 +108,7 @@ alias scram16debug 'scram b -j 16 USER_CXXFLAGS="-g"'
 alias scram32 'scram b -j 32'
 alias scram32debug 'scram b -j 32 USER_CXXFLAGS="-g"'
 
+alias duSort '~/Scripts/utilities/duSort.sh'
 alias count '~/Scripts/utilities/countFoldersAndFiles.sh'
 alias countCrab '~/Scripts/utilities/eosCount.csh'
 alias clearf '~/Scripts/utilities/clearUnwantedFiles.sh'
@@ -135,6 +121,7 @@ alias subLimHist '~/Scripts/utilities/TAMUWW/submitLimitHistograms.sh'
 alias subSysHist '~/Scripts/utilities/TAMUWW/submitSysHistograms.sh'
 alias globus_start '~/globusconnectpersonal-2.3.3/globusconnectpersonal -start -restrict-paths rw/uscms_data/d2/aperloff/ &'
 alias globus_status '~/globusconnectpersonal-2.3.3/globusconnectpersonal -status'
+alias group_members 'getent group | grep lpccvmfs'
 
 alias ME 'source ~/Scripts/utilities/Setup/MatrixElementSetup.csh'
 alias jec 'source ~/Scripts/utilities/Setup/JECSetup.csh'
