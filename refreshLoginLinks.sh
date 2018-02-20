@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This utility sets up the home area softlinks to the login scripts.
+
 function get_script_path() {
 	local SCRIPT_PATH="`dirname \"$0\"`"            # relative
 	SCRIPT_PATH="`( cd \"$SCRIPT_PATH\" && pwd )`"  # absolutized and normalized
@@ -11,13 +13,26 @@ function get_script_path() {
 	echo "$SCRIPT_PATH"
 }
 
-declare -A files=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
-                   [".gitconfig"]="Git" [".gitignore_global"]="Git" \
-                   [".k5login"]="Login" [".login"]="Login" [".emacs"]="Login" [".forward"]="Login" [".profile"]="Login" \
-                   [".cshrc"]="Login" [".tcshrc.complete"]="Login" [".tcshrc.logout"]="Login" \
-                   [".bashrc"]="Login" [".bash_profile"]="Login" [".bash_ps1"]="Login" )
+declare -A files_unified=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
+                   		   [".gitconfig"]="Git" [".gitignore_global"]="Git" \
+                   		   [".k5login"]="Login" [".emacs"]="Login" [".forward"]="Login" )
+declare -A files_tcsh=(    [".login"]="Login" [".cshrc"]="Login" [".tcshrc.complete"]="Login" [".tcshrc.logout"]="Login" )
+declare -A files_bash=(    [".bashrc"]="Login" [".bash_profile"]="Login" [".bash_ps1"]="Login" [".profile"]="Login" )
 
-for file in "${!files[@]}"; do
+if [ `basename "$SHELL"` == "bash" ]; then
+	for key in ${!files_bash[@]}; do
+    	files_unified+=( [${key}]=${files_bash[${key}]} )
+	done
+elif [ `basename "$SHELL"` == "tcsh" ]; then
+	for key in ${!files_tcsh[@]}; do
+    	files_unified+=( [${key}]=${files_tcsh[${key}]} )
+	done
+else
+	echo "Unknown shell ($SHELL)"
+	exit
+fi
+
+for file in "${!files_unified[@]}"; do
 	if [ -L ${HOME}/${file} ]; then
 		echo "Refreshing the \"${file}\" symlink."
 		unlink ${HOME}/${file}
@@ -27,5 +42,5 @@ for file in "${!files[@]}"; do
 	else
 		echo "Making the \"${file}\" symlink"
 	fi
-	ln -s $(get_script_path)/${files[$file]}/${file} ${HOME}/${file}
+	ln -s $(get_script_path)/${files_unified[$file]}/${file} ${HOME}/${file}
 done
