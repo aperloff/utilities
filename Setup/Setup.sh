@@ -16,8 +16,11 @@ array_contains () {
     echo $in
 }
 
-#Select the correct project
+#Set the correct column size for multi column options
+COLUMNS_ORIGINAL=$COLUMNS
 COLUMNS=80
+
+#Select the correct project
 if [[ ${HOSTNAME} = *"cmslpc"* ]]; then
   WORKING_AREA="/uscms_data/d2/aperloff/YOURWORKINGAREA/"
 elif [[ ${HOSTNAME} = *"brazos"* ]]; then
@@ -70,8 +73,10 @@ select proj in "${PROJECTS[@]}"; do
 done
 echo -e "You selected ${proj}"'!\n'
 
-#Find all of the releases in the project paths
+#Set the correct column size for a single column list
 COLUMNS=12
+
+#Find all of the releases in the project paths
 declare RELEASE_PATHS=()
 declare scram_arch=()
 for p in ${PROJECT_PATHS[@]}; do
@@ -150,5 +155,8 @@ if [[ -z "$test" ]]
 then
     voms-proxy-init -voms cms -valid 192:00
 fi
+
+#Reset the column sizes so that the PROMPT_COMMAND function will work again
+COLUMNS=$COLUMNS_ORIGINAL
 
 #select: https://askubuntu.com/questions/1705/how-can-i-create-a-select-menu-in-a-shell-script
