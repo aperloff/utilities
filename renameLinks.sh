@@ -1,4 +1,10 @@
-#!/bin/sh
+#!/bin/bash
+
+if [ -z "$1" ] || [ -z "$2" ]; then
+	echo "usage: $0 <initial pattern> <final pattern> <files>"
+	exit -1
+fi
+
 from="$1"
 to="$2"
 shift 2
