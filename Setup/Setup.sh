@@ -1,6 +1,6 @@
 #!/bin/bash
 
-shopt -s extglob dotglob nullglob
+shopt -s extglob dotglob nullglob 
 
 #Function to check if an array contains a specific value (fuzzy search)
 array_contains () { 
@@ -19,6 +19,12 @@ array_contains () {
 #Set the correct column size for multi column options
 COLUMNS_ORIGINAL=$COLUMNS
 COLUMNS=80
+
+#Check that the script is being sourced and not run
+if [[ "$(basename -- "$0")" == "Setup.sh" ]]; then
+    echo "Don't run $0, source it" >&2
+    exit 1
+fi
 
 #Select the correct project
 if [[ ${HOSTNAME} = *"cmslpc"* ]]; then
@@ -130,33 +136,52 @@ for ((i=0; i<${#RELEASE_PATHS[@]}; i++)); do
 	fi
 done
 
-#Select a release
-prompt="Pick an option (1-${#releases[@]}):"
-PS3="$prompt "
-echo "Which CMSSW release do you want to setup? (Default = CMSSW_5_3_22_patch1)"; \
-select dir in "${release_and_description[@]}"; do
-	echo "You selected ${releases[$REPLY-1]}"'!'
-	 SELECTED_RELEASE_PATH=${RELEASE_PATHS[$REPLY-1]}
-	 SELECTED_ALIAS=${alias[$REPLY-1]}
-	 SELECTED_SCRAM_ARCH=${scram_arch[$REPLY-1]}
-	 break
-done
+#Select a release if there is more than one
+if [ "${#releases[@]}" -eq "1" ]; then
+	SELECTED_RELEASE_PATH=${RELEASE_PATHS[0]}
+	SELECTED_ALIAS=${alias[0]}
+	SELECTED_SCRAM_ARCH=${scram_arch[0]}
+	echo "Only one release available. Selecting ${releases[0]}"
+else
+	prompt="Pick an option (1-${#releases[@]}, anything else to exit):"
+	PS3="$prompt "
+	echo "Which CMSSW release do you want to setup?"; \
+		select dir in "${release_and_description[@]}"; do
+			if ! [[ "${REPLY}" =~ ^-?[0-9]+$ ]]; then
+				break
+			elif [ "$REPLY" -gt "${#releases[@]}" ] || [ "$REPLY" -lt "1" ]; then
+				break
+			else
+				echo "You selected ${releases[$REPLY-1]}"'!'
+				SELECTED_RELEASE_PATH=${RELEASE_PATHS[$REPLY-1]}
+				SELECTED_ALIAS=${alias[$REPLY-1]}
+				SELECTED_SCRAM_ARCH=${scram_arch[$REPLY-1]}
+				break
+			fi
+	done
+fi
 
-#Setup the chosen release
-export SCRAM_ARCH=${SELECTED_SCRAM_ARCH}
-cd ${SELECTED_RELEASE_PATH}/src/
-cmsenv
-source /cvmfs/cms.cern.ch/crab3/crab.sh
-cmsenv
+if [[ -z "${SELECTED_RELEASE_PATH}" ]]; then
+	echo "No release selected"
+else
+	#Setup the chosen release
+	export SCRAM_ARCH=${SELECTED_SCRAM_ARCH}
+	cd ${SELECTED_RELEASE_PATH}/src/
+	cmsenv
+	source /cvmfs/cms.cern.ch/crab3/crab.sh
+	cmsenv
 
-#Check for a voms-proxy
-test=`voms-proxy-info`
-if [[ -z "$test" ]]
-then
-    voms-proxy-init -voms cms -valid 192:00
+	#Check for a voms-proxy
+	test=`voms-proxy-info`
+	if [[ -z "$test" ]]; then
+		voms-proxy-init -voms cms -valid 192:00
+	fi
 fi
 
 #Reset the column sizes so that the PROMPT_COMMAND function will work again
 COLUMNS=$COLUMNS_ORIGINAL
+
+#Reset the shopt options so that tab completion will work
+shopt -u nullglob dotglob
 
 #select: https://askubuntu.com/questions/1705/how-can-i-create-a-select-menu-in-a-shell-script
