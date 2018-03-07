@@ -5,16 +5,17 @@
 ###############
 set -o noclobber
 set -o ignoreeof
-set -o history
+set +o history
+# History
+# Avoid duplicates
+export HISTCONTROL=ignoreboth:erasedups
+# When the shell exits, append to the history file instead of overwriting it
+shopt -s histappend
+# After each command, append to the history file and reread it
+export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
 
 umask 0022
 ulimit -s 11000
-
-#Tab Completion
-#set autocorrect
-#export autoexpand
-#export autolist=ambiguous
-#set complete = enhance
 
 # GIT
 export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
@@ -122,6 +123,15 @@ if [ -f "$HOME/.bash_ps1" ]; then
 fi
 export PROMPT_DIRTRIM=3
 
+#Tab Completion
+#set autocorrect
+#export autoexpand
+#export autolist=ambiguous
+#set complete = enhance
+if [ -f /etc/bash_completion ]; then
+ . /etc/bash_completion
+fi
+
 ###########
 # Aliases #
 ###########
@@ -135,7 +145,6 @@ case "$-" in
       alias a=alias
       alias killit='kill -9'                #guarantees that a process is killed
       alias h='history | tail'
-
 
       alias ll='ls -lFh --color=auto'
       alias la='ls -Ah --color=auto'        #see hidden files
@@ -168,6 +177,11 @@ case "$-" in
   *)  echo "This shell is not interactive. Some aliases not set."
       ;;
 esac
+
+# Computer Information
+alias ncpu='grep -c ^processor /proc/cpuinfo'
+alias gpuinfo='lspci | grep -i nvidia'
+alias linuxinfo='uname -m && cat /etc/*release'
 
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
@@ -230,6 +244,7 @@ alias das_legacy='source ${HOME}/Scripts/utilities/Setup/DASSetup.csh'
 alias hats_legacy='source ${HOME}/Scripts/utilities/Setup/HATSSetup.csh'
 alias setup='source ${HOME}/Scripts/utilities/Setup/Setup.sh'
 alias fpga='source ${HOME}/Scripts/utilities/Setup/FPGASetup.csh'
+alias awssetup='exec tcsh -c "source ~burt/awscli/bin/activate.csh ; exec tcsh"'
 
 if [ -f /usr/bin/condor_submit ]; then
   alias wcq='watch -n 60 condor_q -global aperloff'
@@ -283,3 +298,5 @@ alias rxrdcp='python ${HOME}/Scripts/lpc_scripts/movefiles.py'
 alias eosinfo='eos root://cmseos.fnal.gov/ fileinfo'
 alias xrdfsloc='xrdfs cms-xrd-global.cern.ch locate -h -d'
 
+#Reinitiate history
+set -o history
