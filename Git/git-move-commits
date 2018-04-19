@@ -1,0 +1,107 @@
+#!/bin/bash -e
+
+case `uname` in
+  	Linux) ECHO="echo -e" ;;
+  	*) ECHO="echo" ;;
+esac
+
+usage() {
+cat <<EOF
+usage: git-move-commits [options] <branch> <number of commits>
+
+This will move a set of commits from the master branch to either a new or existing branch.
+Make sure everything is committed or you will lose those changes.
+Based on: https://stackoverflow.com/questions/1628563/move-the-most-recent-commits-to-a-new-branch-with-git
+
+OPTIONS:
+   -h, --help        Show this message
+   -s, --source      The name of the source branch if not "master"
+EOF
+}
+
+export BRANCH=""
+export NCOMMITS=""
+export SOURCE="master"
+
+while [ $# -gt 0 ]; do
+  	case $1 in
+    	-h|--help)
+    	  	usage
+    	  	exit 1
+    	  	;;
+      -s|--source)
+          shift
+          SOURCE=$1
+          shift
+          ;;
+    	-*)
+    	  	$ECHO "Unknown option $1"
+    	  	exit 1
+    	  	;;
+    	*)
+    	  	if [ -n "$NCOMMITS" ]; then
+    	  	  	$ECHO "Unexpected extra argument $1"
+    	  	  	exit 1
+    	  	elif [ -n "$BRANCH" ]; then
+    	  	  	NCOMMITS=$1
+    	  	else
+    	  	  	BRANCH=$1
+    	  	fi
+    	  	shift
+    	  	;;
+  	esac
+done
+
+# checks if branch has something pending
+function parse_git_dirty() {
+  git diff --quiet --ignore-submodules HEAD 2>/dev/null; [ $? -eq 1 ] && echo "*"
+}
+
+# gets the current git branch
+function parse_git_branch() {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$(parse_git_dirty)/"
+}
+
+# is the answer is "<hash> 0", then the local branch exists
+# if the answer is "1", then the local branch does not exist
+# based on: https://stackoverflow.com/questions/5167957/is-there-a-better-way-to-find-out-if-a-local-git-branch-exists
+function does_branch_exist() {
+  git rev-parse --verify --quiet $1
+  echo $?
+}
+
+if [ "$BRANCH" == "" ]; then
+    $ECHO "Missing the branch name."
+    usage
+    exit 1
+fi
+if [ "$NCOMMITS" == "" ]; then
+    $ECHO "Missing the number of commits to move."
+    usage
+    exit 1
+fi
+source_branch_exists=$(does_branch_exist "$SOURCE")
+source_branch_exists=$(echo $source_branch_exists | awk '{print $NF}')
+if [[ $source_branch_exists -gt 0 ]]; then
+    $ECHO "The source branch ($SOURCE) is missing. Are you sure about the name?"
+    usage
+    exit 1
+fi
+
+branch_exists=$(does_branch_exist "$BRANCH")
+branch_exists=$(echo $branch_exists | awk '{print $NF}')
+if [[ $branch_exists -gt 0 ]]; then
+    # case where the branch to move the commits doesn't exist yet
+    # Note: Any changes not committed will be lost.
+    git checkout $SOURCE
+    git branch $BRANCH      # Create a new branch, saving the desired commits
+    git reset --hard HEAD~$NCOMMITS   # Move master back by 3 commits (GONE from master)
+    git checkout $BRANCH    # Go to the new branch that still has the desired commits
+else
+    # case where the destination branch already exists
+    git checkout $BRANCH
+    git merge $SOURCE
+    git checkout $SOURCE
+    git reset --hard HEAD~$NCOMMITS # Go back 3 commits. You *will* lose uncommitted work.
+    git checkout $BRANCH
+fi
