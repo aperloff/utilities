@@ -46,9 +46,15 @@ export X509_USER_PROXY=${HOME}/.x509up_u${UID}
 #alias voms-proxy-init='voms-proxy-init -out ${HOME}/.x509up_u${UID}'
 export SSL_CERT_DIR='/etc/pki/tls/certs:/etc/grid-security/certificates'
 
-# CUDA
-export CUDA_HOME=/usr/local/cuda
-export PATH=${CUDA_HOME}/bin:${PATH}
+# CUDA/Anaconda
+#export CUDA_HOME=/usr/local/cuda
+#export PATH=${CUDA_HOME}/bin:${PATH}
+case `hostname -s` in
+cmslpcgpu*|cmslpc-cvmfs-install*)
+    source /cvmfs/cms-lpc.opensciencegrid.org/sl7/gpu/Setup.sh
+	;;
+esac
+
 
 # ROOT
 export ROOTSYS=${CMS_PATH}/${SCRAM_ARCH}/lcg/root/6.10.09-mmelna2/
@@ -182,6 +188,7 @@ esac
 alias ncpu='grep -c ^processor /proc/cpuinfo'
 alias gpuinfo='lspci | grep -i nvidia'
 alias linuxinfo='uname -m && cat /etc/*release'
+alias top='top -M'
 
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
@@ -221,6 +228,7 @@ alias cpDir='${HOME}/Scripts/utilities/copyDirectories.sh'
 alias subLimHist='${HOME}/Scripts/utilities/TAMUWW/submitLimitHistograms.sh'
 alias subSysHist='${HOME}/Scripts/utilities/TAMUWW/submitSysHistograms.sh'
 alias mcp='${HOME}/Scripts/utilities/mcp.sh'
+alias git-delete-branch='${HOME}/Scripts/utilities/Git/git-delete-branch'
 
 #Globus Connect Personal
 alias globus_start='${HOME}/globusconnectpersonal-2.3.3/globusconnectpersonal -start -restrict-paths rw/uscms_data/d2/aperloff/ &'
@@ -285,6 +293,7 @@ cmslpc*)
   export JME=/eos/uscms/store/user/lpcjme/
   export MBJA=/eos/uscms/store/user/lpcmbja/
   export LNUJJ=/eos/uscms/store/user/lnujj/
+  export EOSL1PFInputs=/eos/cms/store/cmst3/user/jngadiub/L1PFInputs/
   ;;
 esac
 

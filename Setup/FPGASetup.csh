@@ -1,3 +1,3 @@
 #!/bin/tcsh
 
-ssh correlator1.fnal.gov
+ssh -t correlator1.fnal.gov "cd /home/aperloff/; source setup_2016.4.csh; tcsh"

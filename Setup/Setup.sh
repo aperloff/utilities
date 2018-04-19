@@ -67,6 +67,10 @@ select proj in "${PROJECTS[@]}"; do
           PROJECT_PATHS=("MatrixElement/CVS/" "MatrixElement/Git/")
           break
           ;;
+	    "SUSY")
+		  PROJECT_PATHS=("SUSY/")
+		  break
+		  ;;
         "VHbb")
           PROJECT_PATHS=("VHbb/")
           break
