@@ -1,0 +1,91 @@
+#!/bin/bash -e
+
+case `uname` in
+  	Linux) ECHO="echo -e" ;;
+  	*) ECHO="echo" ;;
+esac
+
+usage() {
+cat <<EOF
+usage: git delete-branch [options] <remote> <branch>
+
+This will delete either a local branch, remote branch, or both.
+
+OPTIONS:
+   -b, --both        Same as -lr (delete both local and remote branches)
+   -f, --force       Add the --force option to the --delete command
+   -h, --help        Show this message
+   -l, --local       Delete the local branch
+   -r, --remote      Delete the remote branch
+EOF
+}
+
+export dlocal=false
+export dremote=false
+export force=""
+
+while [ $# -gt 0 ]; do
+  	case $1 in
+    	-b|--both)
+    	  	dlocal=true
+    	  	dremote=true
+    	  	shift
+    	  	;;
+    	-f|--force)
+    	  	force="--force"
+    	  	shift
+    	  	;;
+    	-h|--help)
+    	  	usage
+    	  	exit 1
+    	  	;;
+    	-l|--local)
+		  	dlocal=true
+		  	shift
+		  	;;
+		-r|--remote)
+		  	dremote=true
+		  	shift
+		  	;;
+    	-*)
+    	  	$ECHO "Unknown option $1"
+    	  	exit 1
+    	  	;;
+    	*)
+    	  	if [ -n "$BRANCH" ]; then
+    	  	  	$ECHO "Unexpected extra argument $1"
+    	  	  	exit 1
+    	  	elif [[ -n "$REMOTE" || ("$dlocal" == "true" && "$dremote" == "false") ]]; then
+    	  	  	BRANCH=$1
+    	  	else
+    	  	  	REMOTE=$1
+    	  	fi
+    	  	shift
+    	  	;;
+  	esac
+done
+
+#Checks
+if [ "$dremote" == "false" -a "$dlocal" == "false" ]; then
+	echo "Must specify at least one of the options -b, -l, or -r."
+	usage
+	exit 1
+fi
+if [ "$REMOTE" == "" -a "$dremote" == "true" ]; then
+  	$ECHO "Missing the remote name."
+  	usage
+  	exit 1
+fi
+if [ "$BRANCH" == "" ]; then
+  	$ECHO "Missing the branch name."
+  	usage
+  	exit 1
+fi
+
+#Remove the branches
+if [ "$dremote" == "true" ]; then
+	git push -d ${force} $REMOTE $BRANCH 
+fi
+if [ "$dlocal" == "true" ]; then
+  	git branch -d ${force} $BRANCH
+fi
