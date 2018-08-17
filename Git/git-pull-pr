@@ -1,0 +1,125 @@
+#!/bin/bash -e
+
+case `uname` in
+  	Linux) ECHO="echo -e" ;;
+  	*) ECHO="echo" ;;
+esac
+
+usage() {
+cat <<EOF
+usage: git-pull-pr [options] <user/organization> <branch>
+
+This script will checkout a new branch and pull in the changes for a given PR.
+ It's actually not specific to a PR, but to a branch beloning to a different user
+ or organization. The changes are still tied to a specific repository.
+
+NOTE: If you renamed the repository when it was checked out then you will need to specify
+ a repository name using the -r option.
+
+OPTIONS:
+   -a, --alternate   An alternate destination branch name
+   -h, --help        Show this message
+   -r, --repo        The repository name if not the name of the top level folder
+EOF
+}
+
+export ALTERNATE=""
+export SOURCE=""
+export BRANCH=""
+export REPO=""
+
+while [ $# -gt 0 ]; do
+  	case $1 in
+		-a|--alternate)
+			shift
+			ALTERNATE=$1
+			shift
+			;;
+    	-h|--help)
+    	  	usage
+    	  	exit 1
+    	  	;;
+		-r|--repo)
+			shift
+			REPO=$1
+			shift
+			;;
+    	-*)
+    	  	$ECHO "Unknown option $1"
+    	  	exit 1
+    	  	;;
+    	*)
+    	  	if [ -n "$BRANCH" ]; then
+    	  	  	$ECHO "Unexpected extra argument $1"
+    	  	  	exit 1
+    	  	elif [ -n "$SOURCE" ]; then
+    	  	  	BRANCH=$1
+    	  	else
+    	  	  	SOURCE=$1
+    	  	fi
+    	  	shift
+    	  	;;
+  	esac
+done
+
+# checks if branch has something pending
+function parse_git_dirty() {
+  git diff --quiet --ignore-submodules HEAD 2>/dev/null; [ $? -eq 1 ] && echo "*"
+}
+
+# gets the current git branch
+function parse_git_branch() {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$(parse_git_dirty)/"
+}
+
+# if the answer is "<hash> 0", then the local branch exists
+# if the answer is "1", then the local branch does not exist
+# based on: https://stackoverflow.com/questions/5167957/is-there-a-better-way-to-find-out-if-a-local-git-branch-exists
+function does_branch_exist() {
+  git rev-parse --verify --quiet $1
+  echo $?
+}
+
+if [ "$SOURCE" == "" ]; then
+    $ECHO "Missing the name of the user/organization to pull from."
+    usage
+    exit 1
+else
+	$ECHO "Pulling from the user/organization \"$SOURCE\""
+fi
+if [ "$BRANCH" == "" ]; then
+    $ECHO "Missing the branch name."
+    usage
+    exit 1
+else
+	$ECHO "Pulling from the branch \"$BRANCH\""
+fi
+
+source_branch_exists=$(does_branch_exist "$SOURCE-$BRANCH")
+source_branch_exists=$(echo $source_branch_exists | awk '{print $NF}')
+if [[ $source_branch_exists -eq 0 ]]; then
+	if [ "$ALTERNATE" == "" ]; then
+		$ECHO "The destination branch name ($SOURCE-$BRANCH) already exists."
+		$ECHO "Either delete the existing branch or specify an alternate destination branch name (option -a)."
+		usage
+		exit 1
+	else
+		$ECHO "Using the alternate destination branch name ($ALTERNATE)."
+	fi
+fi
+
+if [ "$ALTERNATE" == "" ]; then
+	$ECHO "git checkout -b $SOURCE-$BRANCH $BRANCH"
+	git checkout -b $SOURCE-$BRANCH $BRANCH
+else
+	$ECHO "git checkout -b $ALTERNATE $BRANCH"
+	git checkout -b $ALTERNATE $BRANCH
+fi
+if [ "$REPO" == "" ]; then
+	REPO="$(basename `git rev-parse --show-toplevel`)"
+	$ECHO "git pull https://github.com/$SOURCE/$REPO.git $BRANCH"
+	git pull https://github.com/$SOURCE/$REPO.git $BRANCH
+else
+	$ECHO "git pull https://github.com/$SOURCE/$REPO.git $BRANCH"
+	git pull https://github.com/$SOURCE/$REPO.git $BRANCH
+fi

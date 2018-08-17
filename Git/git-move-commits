@@ -62,7 +62,7 @@ function parse_git_branch() {
   git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$(parse_git_dirty)/"
 }
 
-# is the answer is "<hash> 0", then the local branch exists
+# if the answer is "<hash> 0", then the local branch exists
 # if the answer is "1", then the local branch does not exist
 # based on: https://stackoverflow.com/questions/5167957/is-there-a-better-way-to-find-out-if-a-local-git-branch-exists
 function does_branch_exist() {
