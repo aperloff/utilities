@@ -17,7 +17,7 @@ declare -A files_unified=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
                    		   [".gitconfig"]="Git" [".gitignore_global"]="Git" \
                    		   [".k5login"]="Login" [".emacs"]="Login" [".forward"]="Login" )
 declare -A files_tcsh=(    [".login"]="Login" [".cshrc"]="Login" [".tcshrc.complete"]="Login" [".tcshrc.logout"]="Login" )
-declare -A files_bash=(    [".bashrc"]="Login" [".bash_profile"]="Login" [".bash_ps1"]="Login" [".profile"]="Login" )
+declare -A files_bash=(    [".bashrc"]="Login" [".bash_profile"]="Login" [".bash_ps1"]="Login" [".profile"]="Login" [".bash_logout"]="Login")
 
 if [ `basename "$SHELL"` == "bash" ]; then
 	for key in ${!files_bash[@]}; do

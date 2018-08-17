@@ -6,6 +6,7 @@
 set -o noclobber
 set -o ignoreeof
 set +o history
+set -P
 # History
 # Avoid duplicates
 export HISTCONTROL=ignoreboth:erasedups
@@ -36,7 +37,9 @@ cmslpc*)
   export SCRAM_ARCH=slc6_amd64_gcc630
   ;;
 esac
-source $VO_CMS_SW_DIR/cmsset_default.sh
+if [[ `hostname -s` != *cmslpc-cvmfs-install* ]]; then
+  source $VO_CMS_SW_DIR/cmsset_default.sh
+fi
 
 # Kerberos
 export KRB5_CONFIG=/home/hepxadmin/krb5.conf
@@ -55,7 +58,6 @@ cmslpcgpu*|cmslpc-cvmfs-install*)
 	;;
 esac
 
-
 # ROOT
 export ROOTSYS=${CMS_PATH}/${SCRAM_ARCH}/lcg/root/6.10.09-mmelna2/
 export ROOFITSYS=${CMS_PATH}/${SCRAM_ARCH}/lcg/root/6.10.09-mmelna2/
@@ -70,6 +72,16 @@ else
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ROOFITSYS}/lib:. 
     export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:$LD_LIBRARY_PATH
 fi
+
+# cms-lpc.opencisncegrid.org
+case `hostname -s` in
+cmslpc40*|cmslpcgpu*|cmslpc-cvmfs-install*)
+	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/":${PATH}
+    ;;
+cmslpc*)
+	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl6/bin/":${PATH}
+	;;
+esac
 
 # User Scripts
 export PATH="${HOME}/Scripts":${PATH}
@@ -115,7 +127,7 @@ EOF
 if [ ! $SSH_AGENT_PID ]; then
   eval "$(ssh-agent -s)" > /dev/null
 fi
-alias addkey='ssh-add -K ~/.ssh/id_rsa'
+alias addkey='ssh-add ~/.ssh/id_rsa'
 # to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
 
 #####################
@@ -306,6 +318,24 @@ alias eosfind='eos root://cmseos.fnal.gov/ find'
 alias rxrdcp='python ${HOME}/Scripts/lpc_scripts/movefiles.py'
 alias eosinfo='eos root://cmseos.fnal.gov/ fileinfo'
 alias xrdfsloc='xrdfs cms-xrd-global.cern.ch locate -h -d'
+
+function list_redirectors {
+	declare -A redirectors
+	redirectors['CERN (EOS)']="eoscms.cern.ch"
+	redirectors['Europe/Asia']="xrootd-cms.infn.it"
+	redirectors['FNAL']="cmsxrootd.fnal.gov"
+	redirectors['FNAL (site)']="cmsxrootd-site.fnal.gov"
+	redirectors['FNAL (EOS)']="cmseos.fnal.gov"
+	redirectors['Global']="cms-xrd-global.cern.ch"
+	printf "%-20s %s\n" "Location/Region" "Redirector"
+	printf "%-20s %s\n" "---------------" "----------"
+	for K in "${!redirectors[@]}"; do printf "%-20s %s\n" "$K:" "${redirectors[$K]}"; done | sort -n -k1
+}
+
+# cern-get-sso-cookie
+#alias cern-get-sso-cookie='/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/cern-get-sso-cookie --capath /etc/grid-security/certificates'
+#alias sso-curl='curl --capath /etc/grid-security/certificates -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
+alias sso-curl='curl -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
 
 #Reinitiate history
 set -o history
