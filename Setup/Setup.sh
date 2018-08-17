@@ -26,6 +26,16 @@ if [[ "$(basename -- "$0")" == "Setup.sh" ]]; then
     exit 1
 fi
 
+#Select the correct SLC version (you might need it later)
+if [[ `uname -r` == *"el6"* ]]; then 
+	SLC_VERSION="slc6"
+elif [[ `uname -r` == *"el7"* ]]; then 
+	SLC_VERSION="slc7"
+else
+	echo "WARNING::Unknown SLC version. Defaulting to SLC7."
+	SLC_VERSION="slc7"
+fi
+
 #Select the correct project
 if [[ ${HOSTNAME} = *"cmslpc"* ]]; then
   WORKING_AREA="/uscms_data/d2/aperloff/YOURWORKINGAREA/"
@@ -68,7 +78,7 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
 	    "SUSY")
-		  PROJECT_PATHS=("SUSY/")
+		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
 		  break
 		  ;;
         "VHbb")
