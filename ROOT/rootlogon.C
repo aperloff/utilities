@@ -99,7 +99,14 @@ void rootlogon() {
      if(!CMSSW_BASE.Contains("CMSSW_7_3_3") && !CMSSW_BASE.Contains("CMSSW_7_4_1")) {
         gSystem->Load(CMSSW_BASE+"/lib/"+SCRAM_ARCH+"/libJetMETAnalysisJetUtilities.so"); printf("\n \t libJetMETAnalysisJetUtilities");
      }
-  }  
+  }
+  else if (TString(gSystem->pwd()).Contains("SUSY")==1) {
+     if (CMSSW_BASE.Contains("CMSSW_10_1_7")==1) {
+        gSystem->Load(CMSSW_BASE+"/lib/"+SCRAM_ARCH+"/libCUAnalysisAuxFunctions.so"); printf("\n \t libCUAnalysisAuxFunctions");
+        gSystem->Load(CMSSW_BASE+"/lib/"+SCRAM_ARCH+"/libCUAnalysisSpecialTools.so"); printf("\n \t libCUAnalysisSpecialTools");
+        gSystem->Load(CMSSW_BASE+"/lib/"+SCRAM_ARCH+"/libCUAnalysisTools.so"); printf("\n \t libCUAnalysisTools");
+     }
+  }
 
   if (TString(gSystem->pwd()).Contains("MVA")==1){
      // --------- S t y l e ---------------------------
