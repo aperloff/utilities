@@ -7,5 +7,9 @@
 [alias]
 	lol = log --graph --decorate --pretty=oneline --abbrev-commit
 	fix = commit --amend --no-edit
+	delete-branch = !${HOME}/Scripts/utilities/Git/git-delete-branch
+	move-commits = !${HOME}/Scripts/utilities/Git/git-move-commits
+	pull-pr = !${HOME}/Scripts/utilities/Git/git-pull-pr
+	copy-untracked = !${HOME}/Scripts/utilities/Git/git-copy-untracked
 [core]
 	excludesfile = /uscms/homes/a/aperloff/.gitignore_global

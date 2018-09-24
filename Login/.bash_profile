@@ -128,6 +128,7 @@ if [ ! $SSH_AGENT_PID ]; then
   eval "$(ssh-agent -s)" > /dev/null
 fi
 alias addkey='ssh-add ~/.ssh/id_rsa'
+trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
 # to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
 
 #####################
@@ -202,6 +203,9 @@ alias gpuinfo='lspci | grep -i nvidia'
 alias linuxinfo='uname -m && cat /etc/*release'
 alias top='top -M'
 
+# User Information
+alias myinfo='finger aperloff'
+
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
 
@@ -241,6 +245,9 @@ alias subLimHist='${HOME}/Scripts/utilities/TAMUWW/submitLimitHistograms.sh'
 alias subSysHist='${HOME}/Scripts/utilities/TAMUWW/submitSysHistograms.sh'
 alias mcp='${HOME}/Scripts/utilities/mcp.sh'
 alias git-delete-branch='${HOME}/Scripts/utilities/Git/git-delete-branch'
+alias git-move-commits='${HOME}/Scripts/utilities/Git/git-move-commits'
+alias git-pull-pr='${HOME}/Scripts/utilities/Git/git-pull-pr'
+alias git-copy-untracked='${HOME}/Scripts/utilities/Git/git-copy-untracked'
 
 #Globus Connect Personal
 alias globus_start='${HOME}/globusconnectpersonal-2.3.3/globusconnectpersonal -start -restrict-paths rw/uscms_data/d2/aperloff/ &'

@@ -1,0 +1,231 @@
+#!/bin/bash -e
+
+case `uname` in
+    Linux) ECHO="echo -e" ;;
+    *) ECHO="echo" ;;
+esac
+
+# if the answer is "<hash> 0", then the local branch exists
+# if the answer is "1", then the local branch does not exist
+# based on: https://stackoverflow.com/questions/5167957/is-there-a-better-way-to-find-out-if-a-local-git-branch-exists
+function does_branch_exist() {
+  git rev-parse --verify --quiet $1
+  echo $?
+}
+
+# checks if branch has something pending
+function parse_git_dirty() {
+  git diff --quiet --ignore-submodules HEAD 2>/dev/null; [ $? -eq 1 ] && echo "*"
+}
+
+# gets the current git branch
+function parse_git_branch() {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$(parse_git_dirty)/"
+}
+
+usage() {
+cat <<'EOF'
+usage: git-copy-untracked [options] <src> <dst>
+
+This script will copy the untracked files from a git repository <src> to a destination
+ folder <dst> (absolute paths please). The destination need not be a git repository.
+ By default the current branch will be used to find the untracked files, but the user
+ may specify a different branch. Also, the script will air on the side of caution and
+ not overwrite files by default, but it can if the option -f is used. If a folder does
+ not exist at the destination, one will be made.
+
+OPTIONS:
+   -b, --branch      The src branch name
+   -d, --dry-run     Dry-run (doesn't actually copy anything)
+   -e, --exclude     File patterns to exclude (pass multiple like: \"ex1 ex2 ex3\")
+   -f, --force       Overwrite files which may already exist in the destination folder
+   -h, --help        Show this message
+   -l, --list        Will list the files to be copied
+   -m, --make        Make the destination directory if it doesn't already exist
+
+EXAMPLES:
+    # Directly using the script, copy the files into a temporary directory
+    ./git-copy-untracked -d -l -e ".*.json" -b setupFor2016DataProcessing ${CMSSW_BASE}/src/TreeMaker $PWD/tmp
+
+    # Using a git alias, copy the untracked files from one release to another
+    git copy-untracked -l /uscms_data/d2/aperloff/YOURWORKINGAREA/SUSY/slc7/CMSSW_9_4_9/src/TreeMaker $PWD/
+EOF
+}
+
+export BRANCH=""
+export DRYRUN=false
+export EXCLUDE=""
+export FORCE=false
+export MAKE=false
+export DST=""
+export SRC=""
+export CURRENTDIR=${PWD}
+export CURRENTBRANCH=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+    -b|--branch)
+        shift
+        BRANCH=$1
+        shift
+        ;;
+    -d|--dry-run)
+        DRYRUN=true
+        shift
+        ;;
+    -e|--exlude)
+        shift
+        EXCLUDE=$1
+        shift
+        ;;
+    -f|--force)
+        FORCE=true
+        shift
+        ;;
+    -h|--help)
+        usage
+        exit 1
+        ;;
+    -l|--list)
+        LIST=true
+        shift
+        ;;
+    -m|--make)
+        MAKE=true
+        shift
+        ;;
+    -*)
+        $ECHO "Unknown option $1"
+        exit 1
+        ;;
+    *)
+        if [ -n "$DST" ]; then
+            $ECHO "Unexpected extra argument $1"
+            exit 1
+        elif [ -n "$SRC" ]; then
+            DST=$1
+        else
+            SRC=$1
+        fi
+        shift
+        ;;
+    esac
+done
+
+if [ "${EXCLUDE}" != "" ]; then
+    IFS=', ' read -r -a exclude_array <<< "${EXCLUDE}"
+fi
+
+if [ "$SRC" == "" ]; then
+    $ECHO "Missing the <src> path (location of the source git repository)\n"
+    usage
+    exit 1
+fi
+if [ "$DST" == "" ]; then
+    $ECHO "Missing the <dst> path\n"
+    usage
+    exit 2
+fi
+
+printf ' %.0s' $(seq 1 `expr ${#SRC} - 3`)
+printf 'SRC ==> DST\n'
+$ECHO "${SRC} ==> ${DST}"
+
+if [ "$DRYRUN" == "true" ]; then
+    $ECHO "Running in dry-run mode"
+fi
+
+if [ ! -d "${SRC}" ]; then
+    $ECHO "The <src> directory doesn't exist!"
+    exit 3
+else
+    cd ${SRC}
+fi
+
+if [ ! -d "${DST}" ]; then
+    $ECHO "The <dst> directory doesn't already exist!"
+    if [ "$MAKE" == "true" ]; then
+        mkdir ${DST}
+    else
+        exit 4
+    fi
+else
+    cd ${SRC}
+fi
+
+# check that branch exists if branch set
+if [ "${BRANCH}" != "" ]; then
+    CURRENTBRANCH=$(parse_git_branch)
+    source_branch_exists=$(does_branch_exist "$BRANCH")
+    source_branch_exists=$(echo $source_branch_exists | awk '{print $NF}')
+    if [[ $source_branch_exists -eq 0 ]]; then
+        git checkout ${BRANCH}
+    else
+        $ECHO "The branch ${BRANCH} does not exist in the source repository"
+        exit 5
+    fi
+fi
+
+files=( $(git ls-files --others --exclude-standard) )
+$ECHO "Will check ${#files[@]} files\n"
+#print all
+#echo ${arr[@]}
+#print first
+#echo ${arr[0]}
+
+COUNTER=0
+
+if [ "${LIST}" == "true" ]; then
+    $ECHO "List of files to be copied:"
+    $ECHO "==========================="
+fi
+for file in "${files[@]}"; do
+    
+    dir=$(dirname "${file}")
+    
+    #Check is the directory for the file exits in the destination
+    #If not, then make it
+    if [ ! -d "${DST}/${dir}" ]; then
+        mkdir -p ${DST}/${dir}
+    fi
+    file=$(basename "${file}")
+
+    #Check if file matches the exclude regex
+    matched_exclude="false"
+    for regex in "${exclude_array[@]}"; do
+        if [[ ${dir}/${file} =~ ${regex} ]]; then
+            matched_exclude="true"
+            break
+        fi        
+    done
+    if [ "${matched_exclude}" == "true" ]; then
+        continue
+    fi
+
+    # Check if file exists. If yes and not FORCE, then continue.
+    if [ -f ${DST}/${dir}/${file} -a "${FORCE}" != "true" ]; then
+        continue
+    fi
+
+    #List the files which will be copied
+    if [ "${LIST}" == "true" ]; then
+        $ECHO "${dir}/$file"
+    fi
+
+    if [ "${DRYRUN}" == "false" ]; then
+        if [ "${FORCE}" == "true" ]; then
+            cp -r ${SRC}/${dir}/${file} ${DST}/${dir}/${file}
+        else
+            cp -n -r ${SRC}/${dir}/${file} ${DST}/${dir}/${file}
+        fi
+    fi
+    let COUNTER=COUNTER+1
+done
+
+$ECHO "\nCopied ${COUNTER} files"
+
+if [ "${BRANCH}" != "" ]; then
+    git checkout ${CURRENTBRANCH}
+fi
+cd ${CURRENTDIR}
+exit 1
