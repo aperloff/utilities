@@ -1,15 +1,146 @@
+[core]
+    editor = /usr/bin/emacs
+	excludesfile = /uscms/homes/a/aperloff/.gitignore_global
 [user]
 	name = Alexx Perloff
 	email = Alexx.Perloff@Colorado.edu
 	github = aperloff
 [color]
 	ui = true
+    branch = auto
+    diff = auto
+    status = auto
+#[color "branch"]
+#    current = red reverse
+#    local = blue
+#    remote = green
+#
+#[color "diff"]
+#    meta = yellow
+#    frag = magenta
+#    old = red bold
+#    new = green
+#    plain = white
+#
+#[color "status"]
+#    added = yellow
+#    changed = green
+#    untracked = cyan
 [alias]
+    # Some aliases taken from:
+    #  https://www.atlassian.com/blog/git/advanced-git-aliases
+    #  http://durdn.com/blog/2012/11/22/must-have-git-aliases-advanced-examples/
+
+    # List all your aliases
+    la = "!git config -l | grep alias | cut -c 7-"
+
+    # Basic shortcuts
+    #cp = cherry-pick
+    #st = status -s
+    #cl = clone
+    #ci = commit
+    #co = checkout
+    #br = branch 
+    #diff = diff --word-diff
+    #dc = diff --cached
+
+    # Tweak defaults
+    #diff = diff --word-diff
+    #branch = branch -ra
+    #grep = grep -Ii
+    #bra = branch -ra
+    #ai = add --interactive
+
+    # initial empty commit
+    empty = "!git commit -am\"[empty] Initial commit\" --allow-empty"
+
+    # List remotes
+    rem="!git config -l | grep remote.*url | tail -n +2"
+	# Add a remote
+    # Third parameter defaults to GitHub, but can be changed if needed
+    ra = "!f() { git remote add $1 ${3-git@github.com}:$2.git; }; f"
+
+    # List commits in graph form
 	lol = log --graph --decorate --pretty=oneline --abbrev-commit
+    # Default look for short git log
+    le = log --oneline --decorate
+    # List commits in short form, with colors and branch/tag annotations
+    ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+    # List commits showing changed files
+    lch = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+    # List with no colors if you need to chain the out put with Unix pipes
+    lnc = log --pretty=format:"%h\\ %s\\ [%cn]"
+    # List oneline commits showing dates
+    lds = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short
+    # List oneline commits showing relative dates
+    ld = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=relative
+
+    # Show the history of a file, with diffs
+    filelog = log -u
+    fl = log -u
+    # Show modified files in last commit
+    dl = "!git ll -1"
+    # Show a diff last commit
+    dlc = diff --cached HEAD^
+    # Show content (full diff) of a commit given a revision
+    diffr  = "!f() { git diff "$1"^.."$1"; }; f"
+    dr  = "!f() { git diff "$1"^.."$1"; }; f"
+    lc  = "!f() { git ll "$1"^.."$1"; }; f"
+
+    # To see what new commits have been created by the last command – typically after a git pull
+    # Invoked with `git new HEAD`
+    new = !sh -c 'git log $1@{1}..$1@{0} "$@"'
+
+    # Find a file path in codebase (grep on filename)
+    f = "!git ls-files | grep -i"
+    # Search/grep your entire codebase for a string
+    grep = grep -Ii
+    gr = grep -Ii
+    # Grep from root folder
+    gra = "!f() { A=$(pwd) && TOPLEVEL=$(git rev-parse --show-toplevel) && cd $TOPLEVEL && git grep --full-name -In $1 | xargs -I{} echo $TOPLEVEL/{} && cd $A; }; f"
+
+    # Show the last tag
+    lasttag = describe --tags --abbrev=0
+    lt = describe --tags --abbrev=0
+
+    # Subtree add
+    sba = "!f() { git subtree add --prefix $2 $1 master --squash; }; f"
+
+    # Rename [branch] to done-[branch]
+    done = "!f() { git branch | grep "$1" | cut -c 3- | grep -v done | xargs -I{} git branch -m {} done-{}; }; f"
+
+    # Merge aliases
+    ours = "!f() { git co --ours $@ && git add $@; }; f"
+    theirs = "!f() { git co --theirs $@ && git add $@; }; f"
+
+    # Reset Commands
+    r = reset
+    r1 = reset HEAD^
+    r2 = reset HEAD^^
+    rh = reset --hard
+    rh1 = reset HEAD^ --hard
+    rh2 = reset HEAD^^ --hard
+
+    # Stash operations
+	sp = stash pop
+    sl = stash list
+    sa = stash apply
+    ss = stash save
+
+    # undo from here http://megakemp.com/2016/08/25/git-undo/
+    undo = "!f() { git reset --hard $(git rev-parse --abbrev-ref HEAD)@{${1-1}}; }; f"
+
+    # Clean merged branches
+    # Remove local branches that have already been merged to master by default,
+    #  but you can pass a different one if you need to
+    bclean = "!f() { git branch --merged ${1-master} | grep -v " ${1-master}$" | xargs -r git branch -d; }; f"
+
+	# Commit aliases
 	fix = commit --amend --no-edit
+    caa = commit -a --amend -C HEAD
+
+	# From scripts
 	delete-branch = !${HOME}/Scripts/utilities/Git/git-delete-branch
 	move-commits = !${HOME}/Scripts/utilities/Git/git-move-commits
 	pull-pr = !${HOME}/Scripts/utilities/Git/git-pull-pr
 	copy-untracked = !${HOME}/Scripts/utilities/Git/git-copy-untracked
-[core]
-	excludesfile = /uscms/homes/a/aperloff/.gitignore_global
