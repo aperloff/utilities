@@ -89,6 +89,34 @@ export PATH="${HOME}/Scripts":${PATH}
 # LaTeX
 #export TEXINPUTS .:~/latex/inputs:/usr/share/texmf/tex/latex/
 
+###########
+# Daemons #
+###########
+
+# Start ssh-agent
+if [ ! $SSH_AGENT_PID ]; then
+  eval "$(ssh-agent -s)" > /dev/null
+fi
+alias addkey='ssh-add ~/.ssh/id_rsa'
+trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
+# to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
+
+#####################
+# Interactive Shell #
+#####################
+
+# Only load Liquid Prompt in interactive shells, not from a script or from scp
+[[ $- = *i* ]] && source ~/Scripts/liquidprompt/liquidprompt
+
+#Tab Completion
+#set autocorrect
+#export autoexpand
+#export autolist=ambiguous
+#set complete = enhance
+if [ -f /etc/bash_completion ]; then
+ . /etc/bash_completion
+fi
+
 ##########
 # iTerm2 #
 ##########
@@ -118,38 +146,6 @@ cat << EOF
       Sets the current unicode version
 EOF
 }
-
-###########
-# Daemons #
-###########
-
-# Start ssh-agent
-if [ ! $SSH_AGENT_PID ]; then
-  eval "$(ssh-agent -s)" > /dev/null
-fi
-alias addkey='ssh-add ~/.ssh/id_rsa'
-trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
-# to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
-
-#####################
-# Interactive Shell #
-#####################
-
-# To add separators to a terminal
-PS1="\n\[\033[35m\]\$(/bin/date)\n\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]\$ "
-if [ -f "$HOME/.bash_ps1" ]; then
-  . "$HOME/.bash_ps1"
-fi
-export PROMPT_DIRTRIM=3
-
-#Tab Completion
-#set autocorrect
-#export autoexpand
-#export autolist=ambiguous
-#set complete = enhance
-if [ -f /etc/bash_completion ]; then
- . /etc/bash_completion
-fi
 
 ###########
 # Aliases #
