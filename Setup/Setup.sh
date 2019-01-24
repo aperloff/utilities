@@ -16,6 +16,14 @@ array_contains () {
     echo $in
 }
 
+#Set the exit conditions
+exit_conditions() {
+    #Reset the column sizes so that the PROMPT_COMMAND function will work again
+    COLUMNS=$COLUMNS_ORIGINAL
+    #Reset the shopt options so that tab completion will work
+    shopt -u nullglob dotglob
+}
+
 #Set the correct column size for multi column options
 COLUMNS_ORIGINAL=$COLUMNS
 COLUMNS=80
@@ -43,6 +51,11 @@ elif [[ ${HOSTNAME} = *"brazos"* ]]; then
   WORKING_AREA="${HOME}"
 elif [[ ${HOSTNAME} = *"alexx"* ]]; then
   WORKING_AREA="/Applications/"
+elif [[ ${HOSTNAME} = "login.uscms.org" ]]; then
+  WORKING_AREA="/local-scratch/aperloff/"
+else
+  echo "Unknown working area. No known projects."
+  exit_conditions
 fi
 PROJECTS=(${WORKING_AREA}/*/)
 for ((i=0; i<${#PROJECTS[@]}; i++)); do
@@ -78,7 +91,7 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
 	    "SUSY",*|*,"SUSY")
-		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
+		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/" "SUSY")
 		  break
 		  ;;
         "VHbb",*|*,"VHbb")
@@ -211,9 +224,10 @@ else
 fi
 
 #Reset the column sizes so that the PROMPT_COMMAND function will work again
-COLUMNS=$COLUMNS_ORIGINAL
+#COLUMNS=$COLUMNS_ORIGINAL
 
 #Reset the shopt options so that tab completion will work
-shopt -u nullglob dotglob
+#shopt -u nullglob dotglob
+exit_conditions
 
 #select: https://askubuntu.com/questions/1705/how-can-i-create-a-select-menu-in-a-shell-script

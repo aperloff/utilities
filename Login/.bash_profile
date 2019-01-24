@@ -18,6 +18,12 @@ export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; histor
 umask 0022
 ulimit -s 11000
 
+# Source aliases and extensions
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+
+
 # GIT
 export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
 
@@ -46,7 +52,7 @@ export KRB5_CONFIG=/home/hepxadmin/krb5.conf
 
 # Grid Proxy
 export X509_USER_PROXY=${HOME}/.x509up_u${UID}
-#alias voms-proxy-init='voms-proxy-init -out ${HOME}/.x509up_u${UID}'
+# to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
 export SSL_CERT_DIR='/etc/pki/tls/certs:/etc/grid-security/certificates'
 
 # CUDA/Anaconda
@@ -83,8 +89,20 @@ cmslpc*)
 	;;
 esac
 
+# Needed to access FNAL EOS from remote server
+if [[ `hostname -s` != *cmslpc* ]]; then
+    export XrdSecGSISRVNAMES="cmseos.fnal.gov"
+fi
+
 # User Scripts
-export PATH="${HOME}/Scripts":${PATH}
+if [ ! -d "${HOME}/Scripts" ]; then
+    export PATH="${HOME}/Scripts":${PATH}
+fi
+
+# User Executables
+if [ ! -d "${HOME}/bin" ]; then
+    export PATH="${HOME}/bin":${PATH}
+fi
 
 # LaTeX
 #export TEXINPUTS .:~/latex/inputs:/usr/share/texmf/tex/latex/
@@ -99,7 +117,6 @@ if [ ! $SSH_AGENT_PID ]; then
 fi
 alias addkey='ssh-add ~/.ssh/id_rsa'
 trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
-# to avoid urllib2 SSL: CERTIFICATE_VERIFY_FAILED
 
 #####################
 # Interactive Shell #
@@ -203,6 +220,8 @@ alias myinfo='finger aperloff'
 
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
+alias kinit_cern='/usr/bin/kinit -5 -A'
+alias kinitfnal='/usr/bin/kinit aperloff@FNAL.GOV'
 
 # Valgrind
 #when using slc6_amd64_gcc700 use this as well --suppressions=$PYTHON_VALGRIND_SUPP
@@ -228,6 +247,17 @@ myscram() {
 	mv ~/dnc.rootlogon.C.dnc ~/.rootlogon.C ;
 	return ; 
 }
+
+# CMSSW
+alias cmslist='source /cvmfs/cms.cern.ch/cmsset_default.sh'
+alias cmsib1='source /cvmfs/cms-ib.cern.ch/week1/cmsset_default.sh'
+alias cmsib0='source /cvmfs/cms-ib.cern.ch/week0/cmsset_default.sh'
+
+# cache dir tag creator
+alias cachedir='echo "Signature: 8a477f597d28d172789f06886806bc55\n# This file is a cache directory tag.\n# For information about cache directory tags, see:\n#       http://www.brynosaurus.com/cachedir/" > CACHEDIR.TAG'
+
+# HERMIT
+alias manageJobs='python $CMSSW_BASE/src/Condor/Production/python/manageJobs.py'
 
 # Scripts
 alias duSort='${HOME}/Scripts/utilities/duSort.sh'
@@ -265,9 +295,15 @@ alias jec_legacy='source ${HOME}/Scripts/utilities/Setup/JECSetup.csh'
 alias vhbb_legacy='source ${HOME}/Scripts/utilities/Setup/VHbbSetup.csh'
 alias das_legacy='source ${HOME}/Scripts/utilities/Setup/DASSetup.csh'
 alias hats_legacy='source ${HOME}/Scripts/utilities/Setup/HATSSetup.csh'
-alias setup='source ${HOME}/Scripts/utilities/Setup/Setup.sh'
-alias fpga='source ${HOME}/Scripts/utilities/Setup/FPGASetup.csh'
-alias awssetup='exec tcsh -c "source ~burt/awscli/bin/activate.csh ; exec tcsh"'
+case `hostname -s` in
+cmslpc*)
+	alias setup='source ${HOME}/Scripts/utilities/Setup/Setup.sh'
+	alias fpga='source ${HOME}/Scripts/utilities/Setup/FPGASetup.csh'
+	alias awssetup='exec tcsh -c "source ~burt/awscli/bin/activate.csh ; exec tcsh"'
+	;;
+*)
+	alias setup='source ${HOME}/utilities/Setup/Setup.sh'
+esac
 
 if [ -f /usr/bin/condor_submit ]; then
   alias wcq='watch -n 60 condor_q -global aperloff'
