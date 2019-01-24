@@ -52,36 +52,36 @@ prompt="Pick an option (1-${#PROJECTS[@]}):"
 PS3="$prompt "
 echo "Which project do you want to work on? (Default = JEC)"; \
 select proj in "${PROJECTS[@]}"; do
-  case $proj in
-        "4BBFF")
+  case "$proj,${REPLY}" in
+        "4BBFF",*|*,"4BBFF")
           PROJECT_PATHS=("4BBFF/")
           break
           ;;
-        "CMSDAS")
-          PROJECT_PATHS=("CMSDAS/2017/" "CMSDAS/2018/")
+        "CMSDAS",*|*,"CMSDAS")
+          PROJECT_PATHS=("CMSDAS/2017/" "CMSDAS/2018/" "CMSDAS/2019/")
           break
           ;;
-        "HATS@LPC")
+        "HATS@LPC",*|*,"HATS@LPC")
           PROJECT_PATHS=("HATS@LPC/" "HATS@LPC/CMSConnect" "HATS@LPC/JEC" "HATS@LPC/Jets" "HATS@LPC/PyROOT-rootpy" "HATS@LPC/Statistics" "HATS@LPC/egamma" "HATS@LPC/hatslpc2014")
           break
           ;;
-        "JEC")
+        "JEC",*|*,"JEC")
           PROJECT_PATHS=("JEC/gitty/" "JEC/")
           break
           ;;
-        "MLJEC")
+        "MLJEC",*|*,"MLJEC")
           PROJECT_PATHS=("MLJEC/")
           break
           ;;
-        "MatrixElement")
+        "MatrixElement",*|*,"MatrixElement")
           PROJECT_PATHS=("MatrixElement/CVS/" "MatrixElement/Git/")
           break
           ;;
-	    "SUSY")
+	    "SUSY",*|*,"SUSY")
 		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
 		  break
 		  ;;
-        "VHbb")
+        "VHbb",*|*,"VHbb")
           PROJECT_PATHS=("VHbb/")
           break
           ;;
@@ -91,7 +91,11 @@ select proj in "${PROJECTS[@]}"; do
           ;;
   esac
 done
-echo -e "You selected ${proj}"'!\n'
+if [[ "${proj}" -eq "" ]]; then
+	echo -e "You selected ${REPLY}"'!\n'
+else
+	echo -e "You selected ${proj}"'!\n'
+fi
 
 #Set the correct column size for a single column list
 COLUMNS=12
@@ -142,7 +146,21 @@ for ((i=0; i<${#RELEASE_PATHS[@]}; i++)); do
    	alias[$i]="${alias[$i]/patch/p}"
    	scram_arch[$i]="$(basename ${scram_arch[$i]})"
    	if [ -e ${RELEASE_PATHS[$i]}/src/description.md ]; then
-   		printf -v VAR "%-29s %s %-80s" "${releases[$i]}" "|" "$(head -n 1 ${RELEASE_PATHS[$i]}/src/description.md)"
+		CURCOL=`tput cols`
+		DESCCOLWIDTH=`expr $CURCOL - 29 - 3 - 3 - 2`
+		DESCRIPTION="$(head -n 3 ${RELEASE_PATHS[$i]}/src/description.md)"
+		DESCWIDTH=${#DESCRIPTION}
+		let NDESCLINES=($DESCWIDTH+$DESCCOLWIDTH-1)/$DESCCOLWIDTH
+		insert="\                                    " #36
+		for j in $(seq 0 `expr ${NDESCLINES} - 2`); do
+			START=$((j * DESCCOLWIDTH))
+			END=$((((j + 1) * DESCCOLWIDTH) + (j*${#insert})))
+			if [ "${DESCWIDTH}" -gt "${DESCCOLWIDTH}" ]; then
+				DESCRIPTION="${DESCRIPTION:0:${END}}${insert}${DESCRIPTION:${END}}"
+			fi
+		done
+
+   		printf -v VAR "%-29s %s %-${DESCCOLWIDTH}s" "${releases[$i]}" "|" "${DESCRIPTION}"
 	   	release_and_description+=("${VAR}")
 	else
 		printf -v VAR "%-29s" ${releases[$i]} 

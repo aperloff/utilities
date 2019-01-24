@@ -24,22 +24,22 @@ export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
 # Sets the editor for crontab -e
 export VISUAL='emacs -nw'
 
+#Select the correct SLC version (you might need it later)
+if [[ `uname -r` == *"el6"* ]]; then
+    SLC_VERSION="slc6"
+elif [[ `uname -r` == *"el7"* ]]; then
+    SLC_VERSION="slc7"
+else
+    echo "WARNING::Unknown SLC version. Defaulting to SLC7."
+    SLC_VERSION="slc7"
+fi
+
 # Set initial SCRAM_ARCH and CMS software
 export VO_CMS_SW_DIR=/cvmfs/cms.cern.ch
-case `hostname -s` in
-hurr|brazos)
-  export SCRAM_ARCH=slc5_amd64_gcc462
-  ;;
-login*)
-  export SCRAM_ARCH=slc6_amd64_gcc630
-  ;;
-cmslpc*)
-  export SCRAM_ARCH=slc6_amd64_gcc630
-  ;;
-esac
 if [[ `hostname -s` != *cmslpc-cvmfs-install* ]]; then
   source $VO_CMS_SW_DIR/cmsset_default.sh
 fi
+export SCRAM_ARCH=${SLC_VERSION}_amd64_gcc630
 
 # Kerberos
 export KRB5_CONFIG=/home/hepxadmin/krb5.conf
@@ -75,7 +75,7 @@ fi
 
 # cms-lpc.opencisncegrid.org
 case `hostname -s` in
-cmslpc40*|cmslpcgpu*|cmslpc-cvmfs-install*)
+cmslpc4[0-2]*|cmslpcgpu*|cmslpc-cvmfs-install*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/":${PATH}
     ;;
 cmslpc*)
@@ -197,7 +197,6 @@ esac
 alias ncpu='grep -c ^processor /proc/cpuinfo'
 alias gpuinfo='lspci | grep -i nvidia'
 alias linuxinfo='uname -m && cat /etc/*release'
-alias top='top -M'
 
 # User Information
 alias myinfo='finger aperloff'
@@ -213,6 +212,7 @@ alias valgrindcms='valgrind --tool=memcheck --leak-check=yes --show-reachable=ye
 alias root='root -l'
 
 # SCRAM
+alias cmsunsetenv='eval scramv1 unsetenv -sh'
 alias scram4='scram b -j 4'
 alias scram4debug='scram b -j 4 USER_CXXFLAGS="-g"'
 alias scram8='scram b -j 8'
@@ -253,8 +253,8 @@ alias group_members='getent group | grep lpccvmfs'
 # SSH
 alias fnal5='ssh -Y aperloff@cmslpc-sl5.fnal.gov'
 alias fnal6='ssh -Y aperloff@cmslpc-sl6.fnal.gov'
-alias fnal7='ssh -Y aperloff@cmslpc42.fnal.gov'
-alias fnal=fnal6
+alias fnal7='ssh -Y aperloff@cmslpc-sl7.fnal.gov'
+alias fnal=fnal7
 alias brazos='ssh -Y -o GSSAPIAuthentication=no aperloff@login.brazos.tamu.edu'
 alias lxplus='ssh -Y -o GSSAPIAuthentication=no aperloff@lxplus.cern.ch'
 alias io='ssh -Y -o GSSAPIAuthentication=no aperloff@io.physics.tamu.edu'
