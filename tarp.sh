@@ -10,7 +10,7 @@ usage: $0 [options] <file(s)/folder(s)>
 This script will tar up a set of files/folders and include a progress bar.
 
 OPTIONS:
-#   -f      A space separated list of files and folders
+   -f      A space separated list of files and folders (not implemented yet)
    -h      Show this message
    -n      The name of the output file
    -z      Use the gzip command to compress the result (default=false)
