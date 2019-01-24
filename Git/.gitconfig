@@ -1,6 +1,7 @@
 [core]
     editor = /usr/bin/emacs
 	excludesfile = /uscms/homes/a/aperloff/.gitignore_global
+	whitespace = cr-at-eol
 [user]
 	name = Alexx Perloff
 	email = Alexx.Perloff@Colorado.edu
