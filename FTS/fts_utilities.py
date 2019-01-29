@@ -3,7 +3,7 @@ import argparse, imp, multiprocessing, os, time, subprocess, sys
 from itertools import islice
 from functools import partial
 from contextlib import contextmanager
-import getSiteInfo
+import getSiteInfo, xrdfs_find
 try:
 	from tqdm import tqdm
 except:
@@ -53,20 +53,22 @@ def diff_file_list(args,start_files,end_files):
 	sys.stdout.flush()
 	function_start_time = time.time()
 
-	diff_set = list(set(start_files) - set(end_files))
+	diff_list = list(set(start_files) - set(end_files))
 
 	print_done(function_start_time,time.time())
 
-	if len(diff_set)>0:
-		print "\t" + col.bold + col.red + "PROBLEM!!!" + col.endc + " There files missing at " + col.yellow + args.end + col.endc + "!"
+	if len(diff_list)>0:
+		print "\t" + col.bold + col.red + "PROBLEM!!!" + col.endc + " There are missing files at " + col.yellow + args.end + col.endc + "!"
 	else:
 		print "\tAll files in " + col.yellow + args.indir + col.endc + "at " + col.bold + col.green + args.start + col.endc + \
 			  " are in " +col.blue + endslash_check(args.outdir) + args.indir + col.endc +" at " + col.bold + col.red + args.end + col.endc + "."
 
 	if args.debug:
-		print_partial_list(start_files,"Partial list of files from " + args.start + ":")
-		print_partial_list(end_files,"Partial list of files from " + args.end + ":")
-		print_partial_list(diff_set,"Partial list of differences in " + args.start + " and " + args.end +":")
+		print_partial_list(start_files,"Partial list of " + str(len(start_files)) + " files from " + args.start + ":")
+		print_partial_list(end_files,"Partial list of " + str(len(end_files)) + " files from " + args.end + ":")
+		print_partial_list(diff_list,"Partial list of " + str(len(diff_list)) + " differences in " + args.start + " and " + args.end +":")
+
+	return diff_list
 
 def endslash_check(string):
 	if string=="" or string[-1]=="/": return string
@@ -78,7 +80,7 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 	function_start_time = time.time()
 
 	lines = []
-	with open(args.tmp+"/"+args.listname, 'w') as f:
+	with open(args.tmp+"/"+(args.listname if args.make else args.missingname), 'w') as f:
 		for item in start_list:
 			line = "%s%s/%s %s%s/%s%s\n" % (endslash_check(start_site.pfn),args.user1,item,
 											endslash_check(end_site.pfn),args.user2,endslash_check(args.outdir),item)
@@ -110,10 +112,17 @@ def get_checksum_dict(args=None, site=None, user='', flist=[], quite=False, q=No
 		# Example command: gfal-sum gsiftp://cmseos-gridftp.fnal.gov//eos/uscms/store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root ADLER32
 		# Example output: gsiftp://cmseos-gridftp.fnal.gov//eos/uscms/store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root e3b722d9
 		cmd = "gfal-sum %s/%s/" % (site.pfn,user)
-	elif args.protocol == "xrdfs":
+		split_position = 1;
+	elif args.protocol == "xrdfs" and site.alias == "T3_US_FNALLPC":
 		# Example command: xrdfs root://cmseos.fnal.gov/ query checksum /store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root
 		# Example output: adler32 e3b722d9
 		cmd = "xrdfs %s query checksum /store/user/%s/" % (site.xrootd_endpoint,user)
+		split_position = 1;
+	elif args.protocol == "xrdfs":
+		# Example command: xrdadler32 root://cmseos.fnal.gov//store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root
+		# Example output: e3b722d9 root://cmseos.fnal.gov//store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root
+		cmd = "xrdadler32 %s/stroe/user/%s/" % (site.xrootd_endpoint,user)
+		split_position = 0;
 	else:
 		raise Exception("get_checksum_dict::Unknown protocol for finding the checksums.")
 
@@ -124,7 +133,7 @@ def get_checksum_dict(args=None, site=None, user='', flist=[], quite=False, q=No
 		if args.protocol == "gfal": cmd_current += " ADLER32"
 		p = subprocess.Popen(cmd_current,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		out = p.communicate()[0]
-		csdict[file] = out.split()[1]
+		csdict[file] = out.split()[split_position]
 		if type(q) != type(None):
 			q.put(file)
 
@@ -133,21 +142,19 @@ def get_checksum_dict(args=None, site=None, user='', flist=[], quite=False, q=No
 
 	return csdict
 
-def get_file_list(args,site):
+def get_file_list(args,site,user):
 	print "Getting file list from " + col.bold + col.blue + site.alias + col.endc + " ...",
 	sys.stdout.flush()
 	function_start_time = time.time()
 
-	cmd = "eos %s find -f --xurl /store/user/%s/%s | grep -v path=" % (site.xrootd_endpoint,args.user1,args.indir)
-	p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-	out = p.communicate()[0]
-	if args.make and args.debug:
-		print
-		print cmd
-		print out
-	filelist = out.decode('ascii').split('\n')
-	filelist = list(filter(lambda x: x != '', filelist))
-	filelist_stripped = [f[f.find(args.user1)+len(args.user1)+1:] for f in filelist]
+	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),files_only=True,quiet=True,xurl=True)
+	filelist_stripped = [f[f.find(user)+len(user)+1:] for f in filelist]
+	if (args.make or args.compare_names) and args.debug:
+		print "\nFound",str(len(filelist)),"at %s/store/user/%s/%s" % (site.xrootd_endpoint,user,args.indir)
+		print_partial_list(filelist,"Initial file list:")
+		print_partial_list(directories,"Initial directory list:")
+		print_partial_list(filelist_stripped,"Stripped file list:")
+
 	if len(args.grep)>0:
 		filelist_stripped = [f for f in filelist_stripped if any(g in f for g in args.grep)]
 	if len(args.vgrep)>0:
@@ -188,12 +195,12 @@ def print_done(start_time=None,end_time=None,prefix="",suffix=""):
 
 def print_partial_list(lst, header=""):
 	if header!="":
-		print header
+		print(header)
 	if type(lst)==list or type(lst)==set:
 		for l in lst[0:3]:
 			print("\t"+l.strip())
 		if len(lst)>3:
-			print "\t..."
+			print("\t...")
 			for l in lst[-1:]:
 				print("\t"+l.strip())
 	elif type(lst)==dict:
@@ -201,7 +208,7 @@ def print_partial_list(lst, header=""):
 		for key in first_three_keys:
 			print("\t"+key+": "+str(lst[key]))
 		if len(lst)>3:
-			print "\t..."
+			print("\t...")
 	else:
 		raise Exception("ERROR::print_partial_list::Unknown type for lst.")
 
@@ -209,6 +216,10 @@ if __name__ == "__main__":
 	# Read parameters
 	parser = argparse.ArgumentParser(description="""
 Used to format the input file necessary for FTS transfers.
+
+Dependencies:
+  - getSiteInfo.py: Python 2.7.11 or higher
+  - pyxrootd: Must use CMSSW_9_3_X or higher
 
 Example of how to run:
 python fts_utilities.py --help
@@ -233,13 +244,14 @@ Transfers can be monitored at:
 									 formatter_class=argparse.RawDescriptionHelpFormatter)
 	# Program options
 	program_group = parser.add_argument_group(title="Program Options", description="Options that guide the programs flow.")
-	program_group.add_argument("-d",	"--debug",		action="store_true",												help="Print debugging information (default = %(default)s)")
-	program_group.add_argument("-l",	"--listname",	default="fts_transfer_file_list.txt",								help="The name for the file list (default = %(default)s)")
-	program_group.add_argument("-n",	"--npool",		default=1,								type=int,					help="The number of simultaneous processes used to process the --compare_checksum option (default = %(default)s)")
-	program_group.add_argument("-P",	"--progress",	action="store_true",												help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
-	program_group.add_argument("-p",	"--protocol",	default="gfal", 						choices=["gfal","xrdfs"],	help="The protocol to use to get the checksum (default = %(default)s)")
-	program_group.add_argument("-r",	"--chk_range",	default=[0,None],						nargs=2,					help="The range of files to checksum from a list (-1 = None) (default = %(default)s)")
-	program_group.add_argument("-t",	"--tmp",		default="./",														help="The directory in which to store the file lists (default = %(default)s)")
+	program_group.add_argument("-d",	"--debug",			action="store_true",												help="Print debugging information (default = %(default)s)")
+	program_group.add_argument("-l",	"--listname",		default="fts_transfer_file_list.txt",								help="The name for the file list (default = %(default)s)")
+	program_group.add_argument("-m",	"--missingname",	default="missing_transfer_list.txt",								help="The name of list for the files missing from the destination site (default = %(default)s)")
+	program_group.add_argument("-n",	"--npool",			default=1,								type=int,					help="The number of simultaneous processes used to process the --compare_checksum option (default = %(default)s)")
+	program_group.add_argument("-P",	"--progress",		action="store_true",												help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
+	program_group.add_argument("-p",	"--protocol",		default="gfal", 						choices=["gfal","xrdfs"],	help="The protocol to use to get the checksum (default = %(default)s)")
+	program_group.add_argument("-r",	"--chk_range",		default=[0,None],						nargs=2,					help="The range of files to checksum from a list (-1 = None) (default = %(default)s)")
+	program_group.add_argument("-t",	"--tmp",			default="./",														help="The directory in which to store the file lists (default = %(default)s)")
 	program_group_exclusive = program_group.add_mutually_exclusive_group(required=True)
 	program_group_exclusive.add_argument("-C",	"--compare_checksum",	action="store_true",	help="Compare the checksums of the files in the input and output directories (default = %(default)s)")
 	program_group_exclusive.add_argument("-c",	"--count",				action="store_true",	help="Make and count the file lists, but don't do any copying (default = %(default)s)")
@@ -258,6 +270,15 @@ Transfers can be monitored at:
 	endpoint_group.add_argument("-v",	"--vgrep",		default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
 
 	args, unknown = parser.parse_known_args()
+
+	# Must use a python release from CMSSW 93X or higher for the pyxrootd bindings
+	min_cmssw_version = (9,3,0)
+	try:
+		cmssw_version = tuple(os.environ['CMSSW_VERSION'].split('_')[1:4])
+	except:
+		cmssw_version = (0,0,0)
+	if cmssw_version < min_cmssw_version:
+		raise RuntimeError("Must be using CMSSW_%s_%s_%s or higher to get the pyxrootd bindings." % min_cmssw_version)
 
 	# If running with npool >1 then can't use a progress bar
 	if args.npool > 1: args.progress = False
@@ -282,7 +303,7 @@ Transfers can be monitored at:
 	end_site = getSiteInfo.main(site_alias=args.end, debug=False, fast=True, quiet=True)
 	print_done(end_site_time,time.time())
 
-	start_files = get_file_list(args,start_site)
+	start_files = get_file_list(args,start_site,args.user1)
 
 	if args.count or args.make:		
 		if args.count:
@@ -292,7 +313,7 @@ Transfers can be monitored at:
 		elif args.make:
 			transfer_lines = format_and_write_transfer_lines(args,start_site,end_site,start_files)
 	elif args.compare_checksum or args.compare_names:
-		end_files = get_file_list(args,end_site)
+		end_files = get_file_list(args,end_site,args.user2)
 		if args.compare_checksum:
 			if args.npool == 1:
 				start_checksum_dict = get_checksum_dict(args,start_site,args.user1,start_files[args.chk_range[0]:args.chk_range[1]])
@@ -347,6 +368,7 @@ Transfers can be monitored at:
 			# must remove the list part of to pass only the dictionary
 			compare_checksum_dicts(args,start_checksum_dict.get()[0],end_checksum_dict.get()[0])
 		elif args.compare_names:
-			diff_file_list(args,start_files,end_files)
-
-
+			diff_list = diff_file_list(args,start_files,end_files)
+			if len(diff_list) > 0:
+				# Write a file to transfer the missing lines
+				transfer_lines = format_and_write_transfer_lines(args,start_site,end_site,diff_list)
