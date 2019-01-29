@@ -36,6 +36,13 @@ def isdir(flag):
 	"""
 	return StatInfoFlags.IS_DIR in BitwiseOrOfStatInfoFlags[flag]
 
+def startslash_check(string):
+	"""
+	On some servers xrdfs.dirlist returns a filename with a starting '/'. This prevents os.path.join from working as it things the item is an absolute path.
+	This function will remove the starting slash if necessary.
+	"""
+	if string!="" and string[0]=="/": return string[1:]
+	else: return string
 
 def walk(xrdfs, top, depth=0, topdown=True, onerror=None, maxdepth=9999, filename_filter="", fullpath=False, xurl=False):
 	"""Directory tree generator for an XRootD file system.
@@ -137,10 +144,10 @@ def xrdls(xrdfs, directory, fullpath=True):
 	"""
 	status, listing = xrdfs.dirlist(directory,DirListFlags.STAT)
 	if status.status != 0:
-		raise Exception("XRootD failed to stat %s" % directory)
+		raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
 	prefix = directory+"/" if fullpath else ""
 	# listing object has more metadata than name and statinfo.flags
-	return {("%s%s" % (prefix, entry.name)) : entry.statinfo.flags for entry in listing}
+	return {("%s%s" % (prefix, startslash_check(entry.name))) : entry.statinfo.flags for entry in listing}
 
 def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=False, debug=False, directories_only=False, files_only=False, \
                fullpath=False, grep=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, vgrep=[], xurl=False):
