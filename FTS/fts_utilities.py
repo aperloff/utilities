@@ -315,6 +315,7 @@ Transfers can be monitored at:
 	elif args.compare_checksum or args.compare_names:
 		end_files = get_file_list(args,end_site,args.user2)
 		if args.compare_checksum:
+			print "Will checksum files in the range %s[%s:%s]%s" % (col.magenta,args.chk_range[0],args.chk_range[1],col.endc)
 			if args.npool == 1:
 				start_checksum_dict = get_checksum_dict(args,start_site,args.user1,start_files[args.chk_range[0]:args.chk_range[1]])
 				end_checksum_dict = get_checksum_dict(args,end_site,args.user2,end_files[args.chk_range[0]:args.chk_range[1]])				
@@ -326,7 +327,6 @@ Transfers can be monitored at:
 				# https://stackoverflow.com/questions/46739019/is-it-possible-to-pass-the-same-optional-arguments-to-multiple-functions
 				# https://stackoverflow.com/questions/13689927/how-to-get-the-amount-of-work-left-to-be-done-by-a-python-multiprocessing-pool
 				with poolcontext(processes=args.npool) as pool:
-					rows, columns = map(int,os.popen('stty size', 'r').read().split())
 					header = "Making a multiprocessed dictionary of filenames and checksums for " + col.bold + col.blue + start_site.alias + col.endc + " ... "
 					print header,
 					sys.stdout.flush()
@@ -334,6 +334,8 @@ Transfers can be monitored at:
 					m = multiprocessing.Manager()
 					q = m.Queue()
 					total = len(start_files[args.chk_range[0]:args.chk_range[1]])
+					line_running = "\r%sJobs remaining: %i/%i          \r"
+					len_line_running = len(line_running)+(2*len(str(total)))-2-6 #2 for \r and 6 for %{i,s}
 					start_checksum_dict = pool.map_async(partial(get_checksum_dict, args, start_site, args.user1, quite=True, q=q), [[f] for f in start_files[args.chk_range[0]:args.chk_range[1]]])
 					# monitor loop
 					while True:
@@ -341,10 +343,10 @@ Transfers can be monitored at:
 							break
 						else:
 							size = q.qsize()
-							print "\r"+header+"Jobs remaining: " + str(total-size) + "/" + str(total) + "          \r",
+							print (line_running % (header,total-size,total)),
 							sys.stdout.flush()
 							time.sleep(1)
-					print_done(start_pool_time,time.time(),header," "*(columns-(len(header)+16)))
+					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 					header = "Making a multiprocessed dictionary of filenames and checksums for " + col.bold + col.blue + end_site.alias + col.endc + " ... "
 					print header,
 					sys.stdout.flush()
@@ -358,10 +360,10 @@ Transfers can be monitored at:
 							break
 						else:
 							size = q.qsize()
-							print "\r"+header+"Jobs remaining: " + str(total-size) + "/" + str(total) + "          \r",
+							print (line_running % (header,total-size,total)),
 							sys.stdout.flush()
 							time.sleep(1)
-					print_done(start_pool_time,time.time(),header," "*(columns-(len(header)+16)))
+					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 			else:
 				raise ValueError("The --npool argument must be >=1.")
 			# multiprocessing actually returns [{u'key1':'value1',...}]
