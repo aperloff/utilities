@@ -121,7 +121,7 @@ def get_checksum_dict(args=None, site=None, user='', flist=[], quite=False, q=No
 	elif args.protocol == "xrdfs":
 		# Example command: xrdadler32 root://cmseos.fnal.gov//store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root
 		# Example output: e3b722d9 root://cmseos.fnal.gov//store/user/lpcsusyhad/SusyRA2Analysis2015/Run2ProductionV14/PrivateSamples.SVJ_mZprime-1000_mDark-20_rinv-0p3_alpha-0p2_n-1000_0_RA2AnalysisTree.root
-		cmd = "xrdadler32 %s/stroe/user/%s/" % (site.xrootd_endpoint,user)
+		cmd = "xrdadler32 %s/store/user/%s/" % (site.xrootd_endpoint,user)
 		split_position = 0;
 	else:
 		raise Exception("get_checksum_dict::Unknown protocol for finding the checksums.")
@@ -346,6 +346,9 @@ Transfers can be monitored at:
 							print (line_running % (header,total-size,total)),
 							sys.stdout.flush()
 							time.sleep(1)
+					# multiprocessing actually returns [{u'key1':'value1',...}]
+					# must remove the list part of to pass only the dictionary
+					start_checksum_dict = start_checksum_dict.get()[0]
 					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 					header = "Making a multiprocessed dictionary of filenames and checksums for " + col.bold + col.blue + end_site.alias + col.endc + " ... "
 					print header,
@@ -363,12 +366,13 @@ Transfers can be monitored at:
 							print (line_running % (header,total-size,total)),
 							sys.stdout.flush()
 							time.sleep(1)
+					# multiprocessing actually returns [{u'key1':'value1',...}]
+					# must remove the list part of to pass only the dictionary
+					end_checksum_dict = end_checksum_dict.get()[0]
 					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 			else:
 				raise ValueError("The --npool argument must be >=1.")
-			# multiprocessing actually returns [{u'key1':'value1',...}]
-			# must remove the list part of to pass only the dictionary
-			compare_checksum_dicts(args,start_checksum_dict.get()[0],end_checksum_dict.get()[0])
+			compare_checksum_dicts(args,start_checksum_dict,end_checksum_dict)
 		elif args.compare_names:
 			diff_list = diff_file_list(args,start_files,end_files)
 			if len(diff_list) > 0:
