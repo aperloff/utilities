@@ -295,8 +295,8 @@ alias jec_legacy='source ${HOME}/Scripts/utilities/Setup/JECSetup.csh'
 alias vhbb_legacy='source ${HOME}/Scripts/utilities/Setup/VHbbSetup.csh'
 alias das_legacy='source ${HOME}/Scripts/utilities/Setup/DASSetup.csh'
 alias hats_legacy='source ${HOME}/Scripts/utilities/Setup/HATSSetup.csh'
-case `hostname -s` in
-cmslpc*)
+case `hostname` in
+cmslpc* | login.uscms.org)
 	alias setup='source ${HOME}/Scripts/utilities/Setup/Setup.sh'
 	alias fpga='source ${HOME}/Scripts/utilities/Setup/FPGASetup.csh'
 	alias awssetup='exec tcsh -c "source ~burt/awscli/bin/activate.csh ; exec tcsh"'
