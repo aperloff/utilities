@@ -12,6 +12,11 @@ set -P
 export HISTCONTROL=ignoreboth:erasedups
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
+# Expand variables on tab. This is a workaround for the bug in tab completion which adds a slash before the $
+# https://askubuntu.com/questions/70750/how-to-get-bash-to-stop-escaping-during-tab-completion
+if [[ `uname -r` == *"el7"* ]]; then
+	shopt -s direxpand
+fi
 # After each command, append to the history file and reread it
 export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
 
@@ -95,12 +100,14 @@ if [[ `hostname -s` != *cmslpc* ]]; then
 fi
 
 # User Scripts
-if [ ! -d "${HOME}/Scripts" ]; then
-    export PATH="${HOME}/Scripts":${PATH}
+if [ -d "${HOME}/Scripts" ]; then
+    export PATH="${HOME}/Scripts/":${PATH}
+	export PATH="${HOME}/Scripts/lpc-scripts/":${PATH}
+	export PATH="${HOME}/Scripts/utilities/":${PATH}
 fi
 
 # User Executables
-if [ ! -d "${HOME}/bin" ]; then
+if [ -d "${HOME}/bin" ]; then
     export PATH="${HOME}/bin":${PATH}
 fi
 
@@ -352,11 +359,12 @@ esac
 #xrdfs can use ls, mkdir, rm, rmdir, cat, tail, some 'query' (checksum for example), stat, ...
 #Example: xrdfs root://cmseos.fnal.gov/ ls /store/user/aperloff
 #Example: eosfind /store/user/aperloff
-alias eosdu='${HOME}/Scripts/utilities/EOS/eosdu'
 alias eosfind='eos root://cmseos.fnal.gov/ find'
 alias rxrdcp='python ${HOME}/Scripts/lpc_scripts/movefiles.py'
 alias eosinfo='eos root://cmseos.fnal.gov/ fileinfo'
 alias xrdfsloc='xrdfs cms-xrd-global.cern.ch locate -h -d'
+alias xrddebugon='export XRD_LOGLEVEL=Debug'
+alias xrddebugoff='unset XRD_LOGLEVEL'
 
 function list_redirectors {
 	declare -A redirectors
