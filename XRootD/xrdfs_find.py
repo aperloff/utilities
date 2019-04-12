@@ -149,18 +149,22 @@ def xrdls(xrdfs, directory, fullpath=True):
 	# listing object has more metadata than name and statinfo.flags
 	return {("%s%s" % (prefix, startslash_check(entry.name))) : entry.statinfo.flags for entry in listing}
 
-def locate_disk_server(xrdfs,path):
+def locate_disk_server(xrdfs,path,debug=False):
 	"""
 	Takes in an XRootD file system object and a directory path.
 	Returns an XRootD file system object
 	"""
+        if debug: print "xrdfs_find::locate_disk_server Finding list of path locations ... "
 	status, locations = xrdfs.deeplocate(path, OpenFlags.NOWAIT)
+        if debug: print "xrdfs_find::locate_disk_server List of locations found."
 	if status.status != 0:
 		raise Exception("XRootD failed to locate %s%s" % (str(xrdfs.url),path))
 	for location in locations:
-		xrdfs_tmp = client.FileSystem("root://"+location.address)
-		status, listing = xrdfs_tmp.dirlist(path,DirListFlags.STAT)
+                if debug: print "\tTrying location root://"+str(location.address)+"/"
+		xrdfs_tmp = client.FileSystem("root://"+location.address+"/")
+		status, listing = xrdfs_tmp.dirlist(path)
 		if status.code == 0:
+                        if debug: print "xrdfs_find::locate_disk_server Valid address is root://"+str(location.address)+"/"
 			return xrdfs_tmp
 	raise Exception("XRootD failed to locate any valid disk servers for %s%s" % (str(xrdfs.url),path))
 
@@ -176,7 +180,7 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 	# In case the user passed in a redirector, rather than an XRootD endpoint, we need to do a deeplocate to find the actual file server
 	# The file servers will be looped over in the order they are returned. The first one able to return a valid dirlist will be used.
 	# The validity check is to make sure that the server we will use is actually working and not just a black hole.
-	xrdfs = locate_disk_server(xrdfs,path)
+	xrdfs = locate_disk_server(xrdfs,path,debug)
 
 	all_files = []
 	all_directories = []
