@@ -384,5 +384,19 @@ function list_redirectors {
 #alias sso-curl='curl --capath /etc/grid-security/certificates -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
 alias sso-curl='curl -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
 
+# FTS
+fts-status () {
+	fts-transfer-status -v -s https://cmsfts3.fnal.gov:8446 ${1} -F
+}
+fts-submit-helper() {
+  IFS=$'\n' __job_id=($(fts-transfer-submit -v -s https://cmsfts3.fnal.gov:8446 -f ${1} -K));
+  printf "%s\n" "${__job_id[@]}";
+}
+fts-submit () {
+	fts-submit-helper ${1}
+	echo
+	echo "Job status: https://cmsfts3.fnal.gov:8449/fts3/ftsmon/#/job/${__job_id[-1]}"
+}
+
 #Reinitiate history
 set -o history
