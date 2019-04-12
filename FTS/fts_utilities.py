@@ -80,7 +80,8 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 	function_start_time = time.time()
 
 	lines = []
-	with open(args.tmp+"/"+(args.listname if args.make else args.missingname), 'w') as f:
+	output_filename = args.listname if args.make else args.missingname
+	with open(args.tmp+"/"+output_filename, 'w') as f:
 		for item in start_list:
 			line = "%s%s/%s %s%s/%s%s\n" % (endslash_check(start_site.pfn),args.user1,item,
 											endslash_check(end_site.pfn),args.user2,endslash_check(args.outdir),item)
@@ -89,12 +90,12 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 
 	print_done(function_start_time,time.time())
 
-	if len(lines)>0 and os.path.isfile(args.tmp+"/"+args.listname):
+	if len(lines)>0 and os.path.isfile(args.tmp+"/"+output_filename):
 		print "\t" + str(args.listname) + " created " + col.bold + col.green + "successfully!" + col.endc
-	elif os.path.isfile(args.tmp+"/"+args.listname) and len(lines)==0:
-		print "\t" + str(args.listname) + " created, but it is " + col.bold + col.yellow + "empty!" + col.endc
+	elif os.path.isfile(args.tmp+"/"+output_filename) and len(lines)==0:
+		print "\t" + str(output_filename) + " created, but it is " + col.bold + col.yellow + "empty!" + col.endc
 	else:
-		print "\tCreation of " + str(args.listname) + col.bold + col.red +" failed!" + col.endc
+		print "\tCreation of " + str(output_filename) + col.bold + col.red +" failed!" + col.endc
 	
 	return lines
 
@@ -266,6 +267,10 @@ Transfers can be monitored at:
 	endpoint_group.add_argument("-o",	"--outdir",		default="",									help="An output directory to contain the input hierarchy (default = %(default)s)")  
 	endpoint_group.add_argument("-u1",	"--user1",		default=os.environ["USER"],					help="The username of the input path (default = %(default)s)")
 	endpoint_group.add_argument("-u2",	"--user2",		default=os.environ["USER"],					help="The username of the output path (default = %(default)s)")
+	endpoint_group.add_argument("--start_endpoint",		default="",									help="Override the start site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument("--end_endpoint",		default="",									help="Override the end site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument("--start_port",			default="",									help="Override the default start site xrootd endpoint port (default = %(default)s)")
+	endpoint_group.add_argument("--end_port",			default="",									help="Override the default end site xrootd endpoint port (default = %(default)s)")
 	endpoint_group.add_argument("-g",	"--grep",		default=[],					nargs="+",		help="list of patterns in the file list to select for (default = %(default)s)")
 	endpoint_group.add_argument("-v",	"--vgrep",		default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
 
@@ -302,6 +307,25 @@ Transfers can be monitored at:
 	end_site_time = time.time()
 	end_site = getSiteInfo.main(site_alias=args.end, debug=False, fast=True, quiet=True)
 	print_done(end_site_time,time.time())
+
+	if args.start_endpoint!="":
+		print "Overriding the xrootd endpoint for " + col.bold + col.blue + args.start + col.endc + " and setting it to " + col.bold + col.yellow + args.start_endpoint + col.endc
+		start_site.xrootd_endpoint = args.start_endpoint
+	if args.end_endpoint!="":
+		print "Overriding the xrootd endpoint for " + col.bold + col.blue + args.end + col.endc + " and setting it to " + col.bold + col.yellow + args.end_endpoint + col.endc
+		end_site.xrootd_endpoint = args.end_endpoint
+	if args.start_port:
+		print "Overriding the default xrootd endpoint port for " + col.bold + col.blue + args.start + col.endc + " and setting it to " + col.bold + col.yellow + args.start_port + col.endc
+		if start_site.xrootd_endpoint[-1]=="/":
+			start_site.xrootd_endpoint = start_site.xrootd_endpoint[:-1] + ":" + args.start_port + start_site.xrootd_endpoint[-1:]
+		else:
+			start_site.xrootd_endpoint = start_site.xrootd_endpoint + ":" + args.start_port + "/"
+	if args.end_port:
+		print "Overriding the default xrootd endpoint port for " + col.bold + col.blue + args.end + col.endc + " and setting it to " + col.bold + col.yellow + args.end_port + col.endc
+		if end_site.xrootd_endpoint[-1]=="/":
+			end_site.xrootd_endpoint = end_site.xrootd_endpoint[:-1] + ":" + args.end_port + end_site.xrootd_endpoint[-1:]
+		else:
+			end_site.xrootd_endpoint = end_site.xrootd_endpoint + ":" + args.end_port + "/"
 
 	start_files = get_file_list(args,start_site,args.user1)
 
