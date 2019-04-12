@@ -231,14 +231,45 @@ if __name__ == "__main__":
 Recursively find files and folders in an XRootD based file system.
 
 Dependencies:
+=============
   - pyxrootd: Must use CMSSW_9_3_X or higher. Can get around this using something like LCG_94.
 
-Examples of how to run interactively:
+Examples of how to run as a CLI:
+================================
 xrdfs_find.py --help
 xrdfs_find.py root://cmseos.fnal.gov/ /store/user/<user>/<path>/
 xrdfs_find.py root://cmseos.fnal.gov/ -p /store/user/<user>/<path>/ -n \\bTTJets
 
+Example of how to run as interactive python:
+============================================
+source /cvmfs/sft.cern.ch/lcg/views/LCG_95apython3/x86_64-centos7-gcc8-opt/setup.sh
+python
+from XRootD import client
+from XRootD.client.flags import DirListFlags, StatInfoFlags, OpenFlags, MkDirFlags, QueryCode
+
+xrdfs = client.FileSystem("<xrootd_endpoint>")
+status, listing = xrdfs.dirlist("/store/user/<path>",DirListFlags.STAT)
+print status
+
+xrdfs = client.FileSystem("<xrootd_endpoint>")
+status, locations = xrdfs.deeplocate("/store/user/<path>", OpenFlags.NOWAIT)
+print locations
+print locations.__dict__['locations'][0].address
+xrdfs2 = client.FileSystem("root://"+locations.__dict__['locations'][0].address)
+status, listing = xrdfs2.dirlist("/store/user/<path>",DirListFlags.STAT)
+print status
+print listing
+
+xrdfs = client.FileSystem("<xrootd_endpoint>")
+status, locations = xrdfs.deeplocate("/store/user/<path>", OpenFlags.NOWAIT)
+print locations
+
+import xrdfs_find
+xrdfs_find.xrdls(xrdfs,"/store/user/<path>")
+xrdfs_find.xrdfs_find("<xrootd_endpoint>","/store/user/<path>", maxdepth=1)
+
 Examples of how to run as a python module:
+==========================================
 import xrdfs_find
 args = {'count': False, 'files_only': False, 'ignore_cmssw': False, 'name': '', 'xurl': False, \
 		'directories_only': False, 'maxdepth': 9999, 'path': '<path>', 'debug': False, 'quiet': True, \
