@@ -44,7 +44,7 @@ def startslash_check(string):
 	if string!="" and string[0]=="/": return string[1:]
 	else: return string
 
-def walk(xrdfs, top, depth=0, topdown=True, onerror=None, maxdepth=9999, filename_filter="", fullpath=False, xurl=False):
+def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filename_filter="", fullpath=False, xurl=False):
 	"""Directory tree generator for an XRootD file system.
 
 	For each directory in the directory tree rooted at top (including top
@@ -109,7 +109,7 @@ def walk(xrdfs, top, depth=0, topdown=True, onerror=None, maxdepth=9999, filenam
 	try:
 		# Note that listdir and error are globals in this module due
 		# to earlier import-*.
-		names = xrdls(xrdfs,top,False)
+		names = xrdls(xrdfs,top,False,(maxdepth<=2))
 	except OSError: #error, err:
 		if onerror is not None:
 			onerror(OSError)
@@ -136,18 +136,37 @@ def walk(xrdfs, top, depth=0, topdown=True, onerror=None, maxdepth=9999, filenam
 	if not topdown:
 		yield str(xrdfs.url)+top if xurl else top, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
 
-def xrdls(xrdfs, directory, fullpath=True):
+def xrdls(xrdfs, directory, fullpath=True, skipstat=False):
 	"""
 	Takes in an XRootD file system object and a directory path.
 	Returns a dictionary of files inside the directory and their or'ed statinfo flags (an integer).
 	If fullpath is set to True then the filenames include the directory path.
 	"""
-	status, listing = xrdfs.dirlist(directory,DirListFlags.STAT)
-	if status.status != 0:
-		raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
+
+	# Do an initial dirlist in case the directory is small enough that skipstat is unnecessary
+	# If it is small, set skipstat to false and continue to get the file/folder information as normal
+	# Rationale:
+	#   In the maxdepth==1 case you don't really need stat because you won't be recurding down directories
+	#   The maxdepth==2 case is only useful in order to get the directory listing within the top level folder (i.e. -d option).
+	#	  In this case, a backup method of just stat'ing the files without periods in the filename is used.
+	if skipstat:
+		status, listing = xrdfs.dirlist(directory)
+		if status.status != 0:
+			raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
+		# Use the normal way of getting stat information if the directory contains less than 50k files
+		if listing.size<50000: skipstat=False
+	if not skipstat:
+		status, listing = xrdfs.dirlist(directory,DirListFlags.STAT)
+		if status.status != 0:
+			raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
+
 	prefix = directory+"/" if fullpath else ""
-	# listing object has more metadata than name and statinfo.flags
-	return {("%s%s" % (prefix, startslash_check(entry.name))) : entry.statinfo.flags for entry in listing}
+
+	if skipstat:
+		return {("%s%s" % (prefix, startslash_check(entry.name))) : xrdfs.stat(endslash_check(directory)+entry.name)[1].flags if "." not in entry.name else not StatInfoFlags.IS_DIR for entry in listing}
+	else:
+		# listing object has more metadata than name and statinfo.flags
+		return {("%s%s" % (prefix, startslash_check(entry.name))) : entry.statinfo.flags for entry in listing}
 
 def locate_disk_server(xrdfs,path,debug=False):
 	"""
