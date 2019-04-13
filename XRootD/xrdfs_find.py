@@ -127,14 +127,14 @@ def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filenam
 				continue
 
 	if topdown:
-		yield str(xrdfs.url)+top if xurl else top, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
+		yield str(xrdfs.url)+top if xurl else top, dirs, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
 	for name in dirs:
 		new_path = join(top, name)
 		if depth<maxdepth:
 			for x in walk(xrdfs, new_path, topdown=topdown, depth=depth+1, onerror=onerror, maxdepth=maxdepth, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
 				yield x
 	if not topdown:
-		yield str(xrdfs.url)+top if xurl else top, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
+		yield str(xrdfs.url)+top if xurl else top, dirs, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
 
 def xrdls(xrdfs, directory, fullpath=True, skipstat=''):
 	"""
@@ -177,7 +177,7 @@ def locate_disk_server(xrdfs,path,debug=False):
 	raise Exception("XRootD failed to locate any valid disk servers for %s%s" % (str(xrdfs.url),path))
 
 def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=False, debug=False, directories_only=False, files_only=False, \
-               fullpath=False, grep=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, skipstat='', vgrep=[], xurl=False):
+               fullpath=False, grep=[], ignore=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, skipstat='', vgrep=[], xurl=False):
 	"""
 	Returns a list of files and directories found within <xrootd_enpoint>/path/.
 	This is the XRootD equivalent to the 'eos <xrootd_endpoint> find' command.
@@ -193,7 +193,7 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 	all_files = []
 	all_directories = []
 
-	for root, dirs, files in walk(xrdfs,path,topdown=not bottomup, maxdepth=maxdepth, filename_filter=name, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
+	for root, walkdirs, dirs, files in walk(xrdfs,path,topdown=not bottomup, maxdepth=maxdepth, filename_filter=name, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
 		if debug:
 			print root
 			print dirs
@@ -220,6 +220,10 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 			# Append the directories to the found list
 			if pass_grep and pass_vgrep:
 				all_directories.append((current_dir,len(dirs),len(files)))
+
+		# Ignore a given path during future recursion
+		if len(ignore)>0:
+			walkdirs[:] = [d for d in walkdirs if not any(i in d for i in ignore)]
 
 	if count:
 		# If the count option is set, return the number of files and folders found
@@ -296,13 +300,15 @@ xrdfs_find.xrdfs_find(<xrootd_endpoint>,<path>)
 	                    																					  up approach. (default = %(default)s)")
 	parser.add_argument("-c",	"--count",			action="store_true",								help="Just print global counters for files/dirs found (default = %(default)s)")
 	parser.add_argument(		"--childcount",		action="store_true",								help="Print the number of children in each directory (default = %(default)s)")
-	parser.add_argument(		"--ignore_cmssw",	action="store_true",								help="Ignore the CMSSW dependency in case using some other source for python with \
-	                    																					  the necessary libraries (default = %(default)s)")
 	parser.add_argument("-D",	"--debug",			action="store_true",								help="Print debugging information (default = %(default)s)")
 	parser.add_argument("-d",	"--directories",	action="store_true",	dest="directories_only",	help="Find directories in <path> (default = %(default)s)")
 	parser.add_argument("-f",	"--files",			action="store_true",	dest="files_only",			help="Find files in <path> (default = %(default)s)")
 	parser.add_argument("-F",	"--fullpath",		action="store_true",								help="Return the full path of the file/folder (default = %(default)s)")
 	parser.add_argument("-g",	"--grep",			default=[],				nargs="+",					help="List of patterns to select for in both file and directory names (default = %(default)s)")
+	parser.add_argument("-i",	"--ignore",			default=[],				nargs="+",					help="List of patterns to ignore for folder names. Unlike vgrep, which is a mask, ignore will \
+	                    																					  stop the recursion from going down any path which matches on of these patterns. (default = %(default)s)")
+	parser.add_argument("-I",	"--ignore_cmssw",	action="store_true",								help="Ignore the CMSSW dependency in case using some other source for python with \
+	                    																					  the necessary libraries (default = %(default)s)")
 	parser.add_argument("-m",	"--maxdepth",		default=9999, 			type=int,					help="Descend only <maxdepth> levels (default = %(default)s)")
 	parser.add_argument("-n",	"--name",			default="",											help="Find filename by regex (default = %(default)s)")
 	parser.add_argument("-q",	"--quiet",			action="store_true",								help="Supress all printouts (default = %(default)s)")
