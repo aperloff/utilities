@@ -44,7 +44,7 @@ def startslash_check(string):
 	if string!="" and string[0]=="/": return string[1:]
 	else: return string
 
-def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filename_filter="", fullpath=False, xurl=False):
+def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filename_filter="", fullpath=False, xurl=False, skipstat=''):
 	"""Directory tree generator for an XRootD file system.
 
 	For each directory in the directory tree rooted at top (including top
@@ -109,7 +109,7 @@ def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filenam
 	try:
 		# Note that listdir and error are globals in this module due
 		# to earlier import-*.
-		names = xrdls(xrdfs,top,False,(maxdepth<=2))
+		names = xrdls(xrdfs,top,False,skipstat)
 	except OSError: #error, err:
 		if onerror is not None:
 			onerror(OSError)
@@ -131,40 +131,29 @@ def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filenam
 	for name in dirs:
 		new_path = join(top, name)
 		if depth<maxdepth:
-			for x in walk(xrdfs, new_path, topdown=topdown, depth=depth+1, onerror=onerror, maxdepth=maxdepth, fullpath=fullpath, xurl=xurl):
+			for x in walk(xrdfs, new_path, topdown=topdown, depth=depth+1, onerror=onerror, maxdepth=maxdepth, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
 				yield x
 	if not topdown:
 		yield str(xrdfs.url)+top if xurl else top, [join(str(xrdfs.url)+top,d) if xurl else join(top,d) if fullpath else d for d in dirs], nondirs
 
-def xrdls(xrdfs, directory, fullpath=True, skipstat=False):
+def xrdls(xrdfs, directory, fullpath=True, skipstat=''):
 	"""
 	Takes in an XRootD file system object and a directory path.
 	Returns a dictionary of files inside the directory and their or'ed statinfo flags (an integer).
 	If fullpath is set to True then the filenames include the directory path.
 	"""
 
-	# Do an initial dirlist in case the directory is small enough that skipstat is unnecessary
-	# If it is small, set skipstat to false and continue to get the file/folder information as normal
-	# Rationale:
-	#   In the maxdepth==1 case you don't really need stat because you won't be recurding down directories
-	#   The maxdepth==2 case is only useful in order to get the directory listing within the top level folder (i.e. -d option).
-	#	  In this case, a backup method of just stat'ing the files without periods in the filename is used.
-	if skipstat:
+	prefix = directory+"/" if fullpath else ""
+
+	if skipstat!='':
 		status, listing = xrdfs.dirlist(directory)
 		if status.status != 0:
 			raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
-		# Use the normal way of getting stat information if the directory contains less than 50k files
-		if listing.size<50000: skipstat=False
-	if not skipstat:
+		return {("%s%s" % (prefix, startslash_check(entry.name))) : xrdfs.stat(endslash_check(directory)+entry.name)[1].flags if skipstat not in entry.name else not StatInfoFlags.IS_DIR for entry in listing}
+	else:
 		status, listing = xrdfs.dirlist(directory,DirListFlags.STAT)
 		if status.status != 0:
 			raise Exception("XRootD failed to stat %s%s" % (str(xrdfs.url),directory))
-
-	prefix = directory+"/" if fullpath else ""
-
-	if skipstat:
-		return {("%s%s" % (prefix, startslash_check(entry.name))) : xrdfs.stat(endslash_check(directory)+entry.name)[1].flags if "." not in entry.name else not StatInfoFlags.IS_DIR for entry in listing}
-	else:
 		# listing object has more metadata than name and statinfo.flags
 		return {("%s%s" % (prefix, startslash_check(entry.name))) : entry.statinfo.flags for entry in listing}
 
@@ -188,7 +177,7 @@ def locate_disk_server(xrdfs,path,debug=False):
 	raise Exception("XRootD failed to locate any valid disk servers for %s%s" % (str(xrdfs.url),path))
 
 def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=False, debug=False, directories_only=False, files_only=False, \
-               fullpath=False, grep=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, vgrep=[], xurl=False):
+               fullpath=False, grep=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, skipstat='', vgrep=[], xurl=False):
 	"""
 	Returns a list of files and directories found within <xrootd_enpoint>/path/.
 	This is the XRootD equivalent to the 'eos <xrootd_endpoint> find' command.
@@ -204,7 +193,7 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 	all_files = []
 	all_directories = []
 
-	for root, dirs, files in walk(xrdfs,path,topdown=not bottomup, maxdepth=maxdepth, filename_filter=name, fullpath=fullpath, xurl=xurl):
+	for root, dirs, files in walk(xrdfs,path,topdown=not bottomup, maxdepth=maxdepth, filename_filter=name, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
 		if debug:
 			print root
 			print dirs
@@ -303,10 +292,12 @@ xrdfs_find.xrdfs_find(<xrootd_endpoint>,<path>)
 									 epilog="",
 									 formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.add_argument("xrootd_endpoint",			metavar='mgm-url',									help="XRootD URL of the management server e.g. root://<hostname>[:<port>]")
-	parser.add_argument("-b",	"--bottomup",		action="store_true",								help="The default for walk is to go from top down. This replaces that with a bottom up approach. (default = %(default)s)")
+	parser.add_argument("-b",	"--bottomup",		action="store_true",								help="The default for walk is to go from top down. This replaces that with a bottom \
+	                    																					  up approach. (default = %(default)s)")
 	parser.add_argument("-c",	"--count",			action="store_true",								help="Just print global counters for files/dirs found (default = %(default)s)")
 	parser.add_argument(		"--childcount",		action="store_true",								help="Print the number of children in each directory (default = %(default)s)")
-	parser.add_argument(		"--ignore_cmssw",	action="store_true",								help="Ignore the CMSSW dependency in case using some other source for python with the necessary libraries (default = %(default)s)")
+	parser.add_argument(		"--ignore_cmssw",	action="store_true",								help="Ignore the CMSSW dependency in case using some other source for python with \
+	                    																					  the necessary libraries (default = %(default)s)")
 	parser.add_argument("-D",	"--debug",			action="store_true",								help="Print debugging information (default = %(default)s)")
 	parser.add_argument("-d",	"--directories",	action="store_true",	dest="directories_only",	help="Find directories in <path> (default = %(default)s)")
 	parser.add_argument("-f",	"--files",			action="store_true",	dest="files_only",			help="Find files in <path> (default = %(default)s)")
@@ -315,6 +306,9 @@ xrdfs_find.xrdfs_find(<xrootd_endpoint>,<path>)
 	parser.add_argument("-m",	"--maxdepth",		default=9999, 			type=int,					help="Descend only <maxdepth> levels (default = %(default)s)")
 	parser.add_argument("-n",	"--name",			default="",											help="Find filename by regex (default = %(default)s)")
 	parser.add_argument("-q",	"--quiet",			action="store_true",								help="Supress all printouts (default = %(default)s)")
+	parser.add_argument("-s",	"--skipstat",		default="",											help="If this is set, do not automatically get the stat information for a directory. Only stat the \
+	                    																					  files/folders with this key. A good choice would be a period. This is useful for very large \
+	                    																					  directories. (default = $(default)s)")
 	parser.add_argument("-x",	"--xurl",			action="store_true",								help="Print the XRootD URL instead of the path name (default = %(default)s)")
 	parser.add_argument("-v",	"--vgrep",			default=[],				nargs="+",					help="List of patterns to ignore in both file and directory names (default = %(default)s)")
 	parser.add_argument("path",																			help="The path in which to search for files and directories")
