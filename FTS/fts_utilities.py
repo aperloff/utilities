@@ -148,7 +148,9 @@ def get_file_list(args,site,user):
 	sys.stdout.flush()
 	function_start_time = time.time()
 
-	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),files_only=True,quiet=True,xurl=True)
+	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),
+	                                              files_only=True,quiet=True,xurl=True,maxdepth=args.maxdepth,
+	                                              skipstat=args.skipstat)
 	filelist_stripped = [f[f.find(user)+len(user)+1:] for f in filelist]
 	if (args.make or args.compare_names) and args.debug:
 		print "\nFound",str(len(filelist)),"at %s/store/user/%s/%s" % (site.xrootd_endpoint,user,args.indir)
@@ -245,13 +247,15 @@ Transfers can be monitored at:
 									 formatter_class=argparse.RawDescriptionHelpFormatter)
 	# Program options
 	program_group = parser.add_argument_group(title="Program Options", description="Options that guide the programs flow.")
-	program_group.add_argument("-d",	"--debug",			action="store_true",												help="Print debugging information (default = %(default)s)")
+	program_group.add_argument("-d",	"--debug",													action="store_true",		help="Print debugging information (default = %(default)s)")
 	program_group.add_argument("-l",	"--listname",		default="fts_transfer_file_list.txt",								help="The name for the file list (default = %(default)s)")
 	program_group.add_argument("-m",	"--missingname",	default="missing_transfer_list.txt",								help="The name of list for the files missing from the destination site (default = %(default)s)")
+	program_group.add_argument(			"--maxdepth",		default=9999,							type=int,					help="The maxdepth to use when getting the filelist. See xrdfs_find documentation for more details (default = %(default)s)")
 	program_group.add_argument("-n",	"--npool",			default=1,								type=int,					help="The number of simultaneous processes used to process the --compare_checksum option (default = %(default)s)")
-	program_group.add_argument("-P",	"--progress",		action="store_true",												help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
+	program_group.add_argument("-P",	"--progress",												action="store_true",		help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
 	program_group.add_argument("-p",	"--protocol",		default="gfal", 						choices=["gfal","xrdfs"],	help="The protocol to use to get the checksum (default = %(default)s)")
 	program_group.add_argument("-r",	"--chk_range",		default=[0,None],						nargs=2,					help="The range of files to checksum from a list (-1 = None) (default = %(default)s)")
+	program_group.add_argument(			"--skipstat",		default="",															help="Do not get extra information for files with this key. See xrdfs_find documentation for more details (default = %(default)s)")
 	program_group.add_argument("-t",	"--tmp",			default="./",														help="The directory in which to store the file lists (default = %(default)s)")
 	program_group_exclusive = program_group.add_mutually_exclusive_group(required=True)
 	program_group_exclusive.add_argument("-C",	"--compare_checksum",	action="store_true",	help="Compare the checksums of the files in the input and output directories (default = %(default)s)")
@@ -261,18 +265,18 @@ Transfers can be monitored at:
 
 	# FTS options
 	endpoint_group = parser.add_argument_group(title="Endpoint Options", description="Options necessary to format the FTS input file and to do the checks after the FTS transfer.")
-	endpoint_group.add_argument("-s",	"--start",		default="",					required=True,	help="The starting site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
-	endpoint_group.add_argument("-e",	"--end",		default="",					required=True,	help="The ending site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
-	endpoint_group.add_argument("-i",	"--indir",		default="",									help="The EOS directory storing the files to be transfered (default = %(default)s)")
-	endpoint_group.add_argument("-o",	"--outdir",		default="",									help="An output directory to contain the input hierarchy (default = %(default)s)")  
-	endpoint_group.add_argument("-u1",	"--user1",		default=os.environ["USER"],					help="The username of the input path (default = %(default)s)")
-	endpoint_group.add_argument("-u2",	"--user2",		default=os.environ["USER"],					help="The username of the output path (default = %(default)s)")
-	endpoint_group.add_argument("--start_endpoint",		default="",									help="Override the start site xrootd endpoint (default = %(default)s)")
-	endpoint_group.add_argument("--end_endpoint",		default="",									help="Override the end site xrootd endpoint (default = %(default)s)")
-	endpoint_group.add_argument("--start_port",			default="",									help="Override the default start site xrootd endpoint port (default = %(default)s)")
-	endpoint_group.add_argument("--end_port",			default="",									help="Override the default end site xrootd endpoint port (default = %(default)s)")
-	endpoint_group.add_argument("-g",	"--grep",		default=[],					nargs="+",		help="list of patterns in the file list to select for (default = %(default)s)")
-	endpoint_group.add_argument("-v",	"--vgrep",		default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
+	endpoint_group.add_argument("-s",	"--start",			default="",					required=True,	help="The starting site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
+	endpoint_group.add_argument("-e",	"--end",			default="",					required=True,	help="The ending site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
+	endpoint_group.add_argument("-i",	"--indir",			default="",									help="The EOS directory storing the files to be transfered (default = %(default)s)")
+	endpoint_group.add_argument("-o",	"--outdir",			default="",									help="An output directory to contain the input hierarchy (default = %(default)s)")  
+	endpoint_group.add_argument("-u1",	"--user1",			default=os.environ["USER"],					help="The username of the input path (default = %(default)s)")
+	endpoint_group.add_argument("-u2",	"--user2",			default=os.environ["USER"],					help="The username of the output path (default = %(default)s)")
+	endpoint_group.add_argument(		"--start_endpoint",	default="",									help="Override the start site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument(		"--end_endpoint",	default="",									help="Override the end site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument(		"--start_port",		default="",									help="Override the default start site xrootd endpoint port (default = %(default)s)")
+	endpoint_group.add_argument(		"--end_port",		default="",									help="Override the default end site xrootd endpoint port (default = %(default)s)")
+	endpoint_group.add_argument("-g",	"--grep",			default=[],					nargs="+",		help="list of patterns in the file list to select for (default = %(default)s)")
+	endpoint_group.add_argument("-v",	"--vgrep",			default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
 
 	args, unknown = parser.parse_known_args()
 
