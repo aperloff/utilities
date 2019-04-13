@@ -48,6 +48,8 @@ def compare_checksum_dicts(args,dict1,dict2):
 		print_partial_list(dict2,"Partial dict of files from " + args.end + ":")
 		print_partial_list(diff_dict,"Partial dict of differences in " + args.start + " and " + args.end +":")
 
+	return diff_dict
+
 def diff_file_list(args,start_files,end_files):
 	print "Comparing the names in the file lists from " + col.bold + col.blue + args.start + col.endc + " and " + col.bold + col.blue + args.end + col.endc + " ...",
 	sys.stdout.flush()
@@ -91,7 +93,7 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 	print_done(function_start_time,time.time())
 
 	if len(lines)>0 and os.path.isfile(args.tmp+"/"+output_filename):
-		print "\t" + str(args.listname) + " created " + col.bold + col.green + "successfully!" + col.endc
+		print "\t" + str(output_filename) + " created " + col.bold + col.green + "successfully!" + col.endc
 	elif os.path.isfile(args.tmp+"/"+output_filename) and len(lines)==0:
 		print "\t" + str(output_filename) + " created, but it is " + col.bold + col.yellow + "empty!" + col.endc
 	else:
@@ -149,8 +151,8 @@ def get_file_list(args,site,user):
 	function_start_time = time.time()
 
 	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),
-	                                              files_only=True,quiet=True,xurl=True,maxdepth=args.maxdepth,
-	                                              skipstat=args.skipstat)
+	                                              files_only=True,quiet=True,xurl=True,ignore=args.ignore,
+	                                              maxdepth=args.maxdepth,skipstat=args.skipstat)
 	filelist_stripped = [f[f.find(user)+len(user)+1:] for f in filelist]
 	if (args.make or args.compare_names) and args.debug:
 		print "\nFound",str(len(filelist)),"at %s/store/user/%s/%s" % (site.xrootd_endpoint,user,args.indir)
@@ -256,6 +258,7 @@ Transfers can be monitored at:
 	program_group.add_argument("-p",	"--protocol",		default="gfal", 						choices=["gfal","xrdfs"],	help="The protocol to use to get the checksum (default = %(default)s)")
 	program_group.add_argument("-r",	"--chk_range",		default=[0,None],						nargs=2,					help="The range of files to checksum from a list (-1 = None) (default = %(default)s)")
 	program_group.add_argument(			"--skipstat",		default="",															help="Do not get extra information for files with this key. See xrdfs_find documentation for more details (default = %(default)s)")
+	program_group.add_argument("-I",	"--ignore",			default=[],								nargs="+",					help="Ignore folder patterns. See xrdfs_find documentation for more details (default = %(default)s)")
 	program_group.add_argument("-t",	"--tmp",			default="./",														help="The directory in which to store the file lists (default = %(default)s)")
 	program_group_exclusive = program_group.add_mutually_exclusive_group(required=True)
 	program_group_exclusive.add_argument("-C",	"--compare_checksum",	action="store_true",	help="Compare the checksums of the files in the input and output directories (default = %(default)s)")
@@ -400,7 +403,10 @@ Transfers can be monitored at:
 					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 			else:
 				raise ValueError("The --npool argument must be >=1.")
-			compare_checksum_dicts(args,start_checksum_dict,end_checksum_dict)
+			diff_dict = compare_checksum_dicts(args,start_checksum_dict,end_checksum_dict)
+			if len(diff_dict) > 0:
+				# write a file to re-transfer the files with non-matching checksums
+				transfer_lines = format_and_write_transfer_lines(args,start_site,end_site,diff_dict)
 		elif args.compare_names:
 			diff_list = diff_file_list(args,start_files,end_files)
 			if len(diff_list) > 0:
