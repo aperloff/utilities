@@ -34,6 +34,10 @@ fi
 # After each command, append to the history file and reread it
 export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
 
+# Get the aliases and functions from the bashrc file
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
 umask 0022
 ulimit -s 11000
 
@@ -61,7 +65,7 @@ fi
 
 # Set initial SCRAM_ARCH and CMS software
 export VO_CMS_SW_DIR=/cvmfs/cms.cern.ch
-if [[ `hostname -s` != *cmslpc-cvmfs-install* ]]; then
+if [[ `hostname -s` != *cmslpc-cvmfs-install* ]] && [[ -d "$VO_CMS_SW_DIR" ]]; then
   source $VO_CMS_SW_DIR/cmsset_default.sh
 fi
 export SCRAM_ARCH=${SLC_VERSION}_amd64_gcc630
@@ -128,6 +132,9 @@ fi
 if [ -d "${HOME}/bin" ]; then
     export PATH="${HOME}/bin":${PATH}
 fi
+
+# User bin
+export PATH=${HOME}/bin:${PATH}
 
 # LaTeX
 #export TEXINPUTS .:~/latex/inputs:/usr/share/texmf/tex/latex/
@@ -203,6 +210,15 @@ case "$-" in
       alias llf='ll | grep -v ^d'
       alias lfile="ls -l | egrep -v '^d'"
       alias ldir="ls -l | egrep '^d'"
+
+      alias hadcount="hadoop fs -count"
+      alias haddf="hadoop fs -df -h"
+      alias haddu="hadoop fs -du"
+      alias hadh="hadoop fs -help"
+      alias hadls="hadoop fs -ls -h"
+      alias hadrm="hadoop fs -rm"
+      alias hadrmdir="hadoop fs -rmdir"
+
       #alias rmi          rm -i             #confirm before deletion
       #alias home         cd                #HOME
       #alias side         'cd ../\!*'       #side
@@ -308,6 +324,10 @@ alias fnal=fnal7
 alias brazos='ssh -Y -o GSSAPIAuthentication=no aperloff@login.brazos.tamu.edu'
 alias lxplus='ssh -Y -o GSSAPIAuthentication=no aperloff@lxplus.cern.ch'
 alias io='ssh -Y -o GSSAPIAuthentication=no aperloff@io.physics.tamu.edu'
+alias culogin='ssh -Y -C aperloff@culogin01.colorado.edu'
+alias torreys='ssh -Y -C aperloff@torreys.colorado.edu'
+alias cubl='ssh -Y -C aperloff@sl6anl02.colorado.edu'
+alias lnxfarm='ssh -Y -C aperloff@lnxfarm327.colorado.edu'
 
 # Setup Scripts
 alias ME_legacy='source ${HOME}/Scripts/utilities/Setup/MatrixElementSetup.csh'
@@ -365,6 +385,9 @@ cmslpc*)
   export MBJA=/eos/uscms/store/user/lpcmbja/
   export LNUJJ=/eos/uscms/store/user/lnujj/
   export EOSL1PFInputs=/eos/cms/store/cmst3/user/jngadiub/L1PFInputs/
+  ;;
+culogin*|torreys*)
+  alias d41="cd /nfs/data41/aperloff/"
   ;;
 esac
 
@@ -506,6 +529,54 @@ fi
 # For debugging a slowdown
 #set +x
 #exec 2>&3 3>&-
+
+#Move folder on login if needbe
+case `hostname -s` in
+torreys*)
+  d41
+  
+  SCRIPTS=(/nfs/data41/aperloff/VivadoSetupScripts/setup_*.sh)
+  for ((i=0; i<${#SCRIPTS[@]}; i++)); do
+      SCRIPT="$(basename ${SCRIPTS[$i]})"
+      VERSION=${SCRIPT#"setup_"}
+      VERSION=${VERSION%".sh"}
+      VERSIONS[$i]="${VERSION}"
+  done
+  if [ "${#releases[@]}" -eq "1" ]; then
+      SELECTED_VERSION=${VERSIONS[0]}
+      SELECTED_SETUP_SCRIPT="/nfs/data41/aperloff/VivadoSetupScripts/setup_${SELECTED_VERSION}.sh"
+      echo "Only one release available. Selecting ${VERSIONS[0]}"
+  else
+      prompt="Pick an option (1-${#VERSIONS[@]}):"
+      PS3="$prompt "
+      echo "Which version of Vivado would you like to work on? (Default = 2018.2)"; \
+	  select ver in "${VERSIONS[@]}"; do
+	      if ! [[ "${REPLY}" =~ ^-?[0-9]+$ ]]; then
+		  break
+              elif [ "$REPLY" -gt "${#VERSIONS[@]}" ] || [ "$REPLY" -lt "1" ]; then
+		  break
+              else
+		  echo "You selected ${VERSIONS[$REPLY-1]}"'!'
+		  SELECTED_VERSION=${VERSIONS[$REPLY-1]}
+		  SELECTED_SETUP_SCRIPT="/nfs/data41/aperloff/VivadoSetupScripts/setup_${SELECTED_VERSION}.sh"
+		  break
+              fi
+      done
+  fi
+  if [[ -z "${SELECTED_SETUP_SCRIPT}" ]]; then
+      echo "Not a valid version selected."
+  else
+      source ${SELECTED_SETUP_SCRIPT}
+  fi
+
+  # SLX Setup
+  # Run with 'SLX &'
+  if [[ $- == i ]]; then
+      export LM_LICENSE_FILE=/nfs/data41/software/silexica/lic/LicenseFile.lic:$LM_LICENSE_FILE
+      source /nfs/data41/software/silexica/exports
+  fi
+  ;;
+esac
 
 #Reinitiate history
 set -o history
