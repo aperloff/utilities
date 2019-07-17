@@ -1,5 +1,5 @@
 [core]
-    editor = /usr/bin/emacs
+    editor = /usr/bin/emacs -nw
 	excludesfile = /uscms/homes/a/aperloff/.gitignore_global
 	whitespace = cr-at-eol
 [user]
@@ -149,3 +149,5 @@
 	move-commits = !${HOME}/Scripts/utilities/Git/git-move-commits
 	pull-pr = !${HOME}/Scripts/utilities/Git/git-pull-pr
 	copy-untracked = !${HOME}/Scripts/utilities/Git/git-copy-untracked
+[cms]
+	protocol = ssh
