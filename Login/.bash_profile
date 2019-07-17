@@ -10,8 +10,16 @@ set -P
 # History
 # Avoid duplicates
 export HISTCONTROL=ignoreboth:erasedups
+# Don’t save ls, ps and history commands
+export HISTIGNORE="ls:ll:ps:history:exit"
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
+# Add Date and Time to Bash History
+export HISTTIMEFORMAT="%h %d %H:%M:%S "
+# Increase the number of commands to remember in the command history (default = 500)
+export HISTSIZE=10000
+# Increase the maximum number of lines contained in the history file (default = 500)
+export HISTFILESIZE=10000
 # Expand variables on tab. This is a workaround for the bug in tab completion which adds a slash before the $
 # https://askubuntu.com/questions/70750/how-to-get-bash-to-stop-escaping-during-tab-completion
 if [[ `uname -r` == *"el7"* ]]; then
@@ -259,6 +267,7 @@ myscram() {
 alias cmslist='source /cvmfs/cms.cern.ch/cmsset_default.sh'
 alias cmsib1='source /cvmfs/cms-ib.cern.ch/week1/cmsset_default.sh'
 alias cmsib0='source /cvmfs/cms-ib.cern.ch/week0/cmsset_default.sh'
+#alias cmsenv='eval `scram runtime -sh`; PATH=${CMSSW_BASE}/test/${SCRAM_ARCH}/:${PATH}'
 
 # cache dir tag creator
 alias cachedir='echo "Signature: 8a477f597d28d172789f06886806bc55\n# This file is a cache directory tag.\n# For information about cache directory tags, see:\n#       http://www.brynosaurus.com/cachedir/" > CACHEDIR.TAG'
@@ -374,6 +383,8 @@ function list_redirectors {
 	redirectors['FNAL (site)']="cmsxrootd-site.fnal.gov"
 	redirectors['FNAL (EOS)']="cmseos.fnal.gov"
 	redirectors['Global']="cms-xrd-global.cern.ch"
+	redirectors['Open Data']="eospublic.cern.ch"
+	redirectors['CERNBOX (T2_CH_CERNBOX)']="eosuser.cern.ch"
 	printf "%-20s %s\n" "Location/Region" "Redirector"
 	printf "%-20s %s\n" "---------------" "----------"
 	for K in "${!redirectors[@]}"; do printf "%-20s %s\n" "$K:" "${redirectors[$K]}"; done | sort -n -k1
