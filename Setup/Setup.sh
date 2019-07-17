@@ -91,7 +91,11 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
 	    "SUSY",*|*,"SUSY")
-		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/" "SUSY")
+		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
+		  break
+		  ;;
+	    "TSABoard",*|*,"TSABoard")
+		  PROJECT_PATHS=("TSABoard/${SLC_VERSION}/")
 		  break
 		  ;;
         "VHbb",*|*,"VHbb")
