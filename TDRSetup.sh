@@ -44,11 +44,13 @@ fi
 
 #Get a list of [notes|papers]
 notes_papers=(${working_area}/${np_selection}/*/)
-#Filter the baths for just the last folder name
+#Filter the paths for just the last folder name
 for ((i=0; i<${#notes_papers[@]}; i++)); do
   notes_papers[$i]="$(basename ${notes_papers[$i]})"
 done
-for index in "${!notes_papers[@]}" ; do [[ ( "${notes_papers[$index]}" -eq "tmp" ) || ( "${notes_papers[$index]}" -eq "MVA_Directions" ) ]] && unset -v 'notes_papers[$index]' ; done
+#Filter specific folder names
+# Note: '-eq' does not work for checking string equality. Use '==' instead.
+for index in "${!notes_papers[@]}" ; do [[ ( "${notes_papers[$index]}" == "tmp" ) || ( "${notes_papers[$index]}" == "MVA_Directions" ) || ( "${notes_papers[$index]}" == "general" )]] && unset -v 'notes_papers[$index]' ; done
 notes_papers=("${notes_papers[@]}")
 #Setup the [note|paper descriptions]
 declare notes_papers_description=()

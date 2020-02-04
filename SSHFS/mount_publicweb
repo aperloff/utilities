@@ -1,0 +1,10 @@
+# Mount my shared_folder at cmslpc-sl6.fnal.gov
+
+# Dependencies
+# ------------
+# https://github.com/osxfuse/osxfuse/wiki/SSHFS
+
+sudo umount -f /Volumes/publicweb
+sudo mkdir /Volumes/publicweb
+#mount it
+sudo sshfs -o volname=publicweb -o IdentityFile=/Users/aperloff/.ssh/id_rsa -o follow_symlinks -o allow_other,defer_permissions aperloff@cmslpc-sl6.fnal.gov:/publicweb/a/aperloff/ /Volumes/publicweb/

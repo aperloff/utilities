@@ -1,11 +1,9 @@
 #!/bin/bash
 
-
-
 echo "Is this a draft? (y/n)"
 read IsDraft
 
-if [[ ! -d "utils/" ]]; then
+if [[ -f "utils/tdr" ]]; then
 	cmd="utils/tdr --"
 else
 	cms="tdr --"
