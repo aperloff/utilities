@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# For debugging a slowdown
+# Remember to (un)comment the block at the bottom
+#PS4='+ $(date "+%s.%N")\011 '
+#exec 3>&2 2>/tmp/bashstart.$$.log
+#set -x
+
 ###############
 # Environment #
 ###############
@@ -10,7 +16,7 @@ set -P
 # History
 # Avoid duplicates
 export HISTCONTROL=ignoreboth:erasedups
-# Don’t save ls, ps and history commands
+# Don't save ls, ps and history commands
 export HISTIGNORE="ls:ll:ps:history:exit"
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
@@ -36,9 +42,14 @@ if [ -f ~/.bashrc ]; then
         . ~/.bashrc
 fi
 
-
 # GIT
 export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
+
+# Emacs
+# Taken from: https://superuser.com/questions/204236/how-can-i-open-a-file-read-only-from-command-line-with-emacs-vi-vim
+ev() {
+  emacs "$1" "$2" --eval '(setq buffer-read-only t)'
+}
 
 # Sets the editor for crontab -e
 export VISUAL='emacs -nw'
@@ -74,6 +85,8 @@ export SSL_CERT_DIR='/etc/pki/tls/certs:/etc/grid-security/certificates'
 case `hostname -s` in
 cmslpcgpu*|cmslpc-cvmfs-install*)
     source /cvmfs/cms-lpc.opensciencegrid.org/sl7/gpu/Setup.sh
+	export CPATH=/cvmfs/cms-lpc.opensciencegrid.org/sl7/usr/local/cuda/bin/include:$CPATH
+	export DYLD_LIBRARY_PATH=/cvmfs/cms-lpc.opensciencegrid.org/sl7/usr/local/cuda/lib:$DYLD_LIBRARY_PATH
 	;;
 esac
 
@@ -94,7 +107,7 @@ fi
 
 # cms-lpc.opencisncegrid.org
 case `hostname -s` in
-cmslpc4[0-2]*|cmslpcgpu*|cmslpc-cvmfs-install*)
+cmslpc1[0-9][0-9]*|cmslpcgpu*|cmslpc-cvmfs-install*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/":${PATH}
     ;;
 cmslpc*)
@@ -232,6 +245,11 @@ alias linuxinfo='uname -m && cat /etc/*release'
 
 # User Information
 alias myinfo='finger aperloff'
+
+# Encrypt/Decrypt Files
+# Use as 'encrypt <file>' or 'decrypt <file>.gpg'
+alias encrypt='gpg -c'
+alias dycrypt='gpg'
 
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
@@ -385,9 +403,18 @@ function list_redirectors {
 	redirectors['Global']="cms-xrd-global.cern.ch"
 	redirectors['Open Data']="eospublic.cern.ch"
 	redirectors['CERNBOX (T2_CH_CERNBOX)']="eosuser.cern.ch"
-	printf "%-20s %s\n" "Location/Region" "Redirector"
-	printf "%-20s %s\n" "---------------" "----------"
-	for K in "${!redirectors[@]}"; do printf "%-20s %s\n" "$K:" "${redirectors[$K]}"; done | sort -n -k1
+	declare -A user_areas
+	user_areas['CERN (EOS)']="/store/user/<username>"
+	user_areas['Europe/Asia']="/store/user/<username>"
+	user_areas['FNAL']="/store/user/<username>"
+	user_areas['FNAL (site)']="/store/user/<username>"
+	user_areas['FNAL (EOS)']="/eos/uscms/store/user/<username>"
+	user_areas['Global']="/store/user/<username>"
+	user_areas['Open Data']="/eos/opendata/cms/"
+	user_areas['CERNBOX (T2_CH_CERNBOX)']="/eos/user/<first letter in username>/<username>/"
+	printf "%-30s %-30s %-30s\n" "Location/Region" "Redirector" "User Storage Path"
+	printf "%-30s %-30s %-30s\n" "---------------" "----------" "-----------------"
+	for K in "${!redirectors[@]}"; do printf "%-30s %-30s %-30s\n" "$K:" "${redirectors[$K]}" "${user_areas[$K]}"; done | sort -n -k1
 }
 
 # cern-get-sso-cookie
@@ -397,17 +424,96 @@ alias sso-curl='curl -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/
 
 # FTS
 fts-status () {
-	fts-transfer-status -v -s https://cmsfts3.fnal.gov:8446 ${1} -F
+	#example: fts-status <job-id> <server>
+	fts-transfer-status -v -s ${2:-https://cmsfts3.fnal.gov:8446} ${1} -F
+}
+fts-priority-helper() {
+	args=()
+	args+=( '-s' "${1}" "${2}" "${3}" )
+	echo -e "# Command : fts-set-priority ${args[@]}"
+	IFS=$'\n' __priority_status=($(fts-set-priority "${args[@]}"));
 }
 fts-submit-helper() {
-  IFS=$'\n' __job_id=($(fts-transfer-submit -v -s https://cmsfts3.fnal.gov:8446 -f ${1} -K));
-  printf "%s\n" "${__job_id[@]}";
+  args=()
+  args+=( '-v' '-s' "${4}" '-f' "${1}" '-K' '--job-metadata' '{"issuer": "Alexx"}' "${5}")
+  (( "${3}" == "true" )) && args+=( '-o' )
+
+  if [[ "${2}" == "true" ]]; then
+	  echo -e "# Dry-run : true\n# Command : fts-transfer-submit ${args[@]}"
+  else
+	  echo -e "# Command : fts-transfer-submit ${args[@]}"
+	  IFS=$'\n' __job_id=($(fts-transfer-submit "${args[@]}"));
+	  printf "%s\n" "${__job_id[@]}";
+  fi
 }
 fts-submit () {
-	fts-submit-helper ${1}
-	echo
-	echo "Job status: https://cmsfts3.fnal.gov:8449/fts3/ftsmon/#/job/${__job_id[-1]}"
+	local dryrun="false"
+	local overwrite="false"
+	local other=""
+	local server="https://cmsfts3.fnal.gov:8446"
+	local priority=3
+	local usage="$FUNCNAME [-h] [-d] [-o] [-O <other options>] [-p <priority>] [-s <server name>] <file list to submit>
+    -- submits a list of file transfers to FTS.
+
+    where:
+        -d  echo the command rather than submitting to FTS (default: ${dryrun})
+        -h  show this help message
+        -o  overwrite any previously existing files at the destination (default: ${overwrite})
+        -O  passthrough for other fts-transfer-submit options
+        -p  set the job priority after submission (default: ${priority})
+        -s  change the FTS server (default: ${server})
+              commonly used servers:
+                FNAL: https://cmsfts3.fnal.gov:8446
+                FNAL (backup): https://cmsftssrv2.fnal.gov:8446
+                CERN: https://fts3.cern.ch:8449
+
+    example: fts-submit fts_transfer_file_list.txt"
+
+	local OPTIND OPTARG
+	while getopts 'hdoO:p:s:' option; do
+		case "$option" in
+			d) dryrun="true"
+			   ;;
+			h) echo "$usage"
+			   return 0
+			   ;;
+			o) overwrite="true"
+			   ;;
+			O) other=$OPTARG
+			   ;;
+			p) priority=$OPTARG
+			   ;;
+			s) server=$OPTARG
+			   ;;
+            :) printf "missing argument for -%s\n" "$OPTARG" >&2
+               echo "$usage" >&2
+               return -1
+               ;;
+            \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+                echo "$usage" >&2
+                return -2
+                ;;
+        esac
+	done
+	shift $((OPTIND - 1))
+
+	fts-submit-helper ${1} ${dryrun} ${overwrite} ${server} ${other}
+
+	if [[ "${dryrun}" == "false" ]]; then
+		local server_url=${server%:*}
+		echo
+		echo "Job status: ${server_url}:8449/fts3/ftsmon/#/job/${__job_id[-1]}"
+
+		if [[ "${priority}" != "3" ]]; then
+			echo "Job priority: ${priority}"
+			fts-priority-helper ${server} ${__job_id[-1]} ${priority}
+		fi
+	fi
 }
 
 #Reinitiate history
 set -o history
+
+# For debugging a slowdown
+#set +x
+#exec 2>&3 3>&-
