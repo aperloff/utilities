@@ -307,12 +307,12 @@ Transfers can be monitored at:
 	print "Getting site information for " + col.bold + col.blue + args.start + col.endc + " ...",
 	sys.stdout.flush()
 	start_site_time = time.time()
-	start_site = getSiteInfo.main(site_alias=args.start, debug=False, fast=True, quiet=True)
+	start_site = getSiteInfo.getSiteInfo(site_alias=args.start, debug=False, fast=True, quiet=True)
 	print_done(start_site_time,time.time())
 	print "Getting site information for " + col.bold + col.blue + args.end + col.endc + " ...",
 	sys.stdout.flush()
 	end_site_time = time.time()
-	end_site = getSiteInfo.main(site_alias=args.end, debug=False, fast=True, quiet=True)
+	end_site = getSiteInfo.getSiteInfo(site_alias=args.end, debug=False, fast=True, quiet=True)
 	print_done(end_site_time,time.time())
 
 	if args.start_endpoint!="":
