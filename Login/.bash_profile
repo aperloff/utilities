@@ -37,11 +37,6 @@ export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; histor
 umask 0022
 ulimit -s 11000
 
-# Source aliases and extensions
-if [ -f ~/.bashrc ]; then
-        . ~/.bashrc
-fi
-
 # GIT
 export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
 
@@ -109,6 +104,8 @@ fi
 case `hostname -s` in
 cmslpc1[0-9][0-9]*|cmslpcgpu*|cmslpc-cvmfs-install*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/":${PATH}
+	export SINGULARITY_CACHEDIR="/uscms_data/d2/aperloff/.singularity/cache"
+	export SINGULARITY_LOCALCACHEDIR="/uscms_data/d2/aperloff/.singularity/cache"
     ;;
 cmslpc*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl6/bin/":${PATH}
@@ -134,17 +131,6 @@ fi
 
 # LaTeX
 #export TEXINPUTS .:~/latex/inputs:/usr/share/texmf/tex/latex/
-
-###########
-# Daemons #
-###########
-
-# Start ssh-agent
-if [ ! $SSH_AGENT_PID ]; then
-  eval "$(ssh-agent -s)" > /dev/null
-fi
-alias addkey='ssh-add ~/.ssh/id_rsa'
-trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
 
 #####################
 # Interactive Shell #
@@ -511,9 +497,10 @@ fts-submit () {
 	fi
 }
 
-#Reinitiate history
-set -o history
-
 # For debugging a slowdown
 #set +x
 #exec 2>&3 3>&-
+
+#Reinitiate history
+set -o history
+

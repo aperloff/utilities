@@ -1,6 +1,7 @@
 [ -f /etc/bash.bashrc ] && . /etc/bash.bashrc
 [ -f /etc/bashrc ] && . /etc/bashrc
 #[ -f /etc/profile ] && source /etc/profile
+[ -f ~/.bash_profile ] && [[ $- = *i* ]] && . ~/.bash_profile
 #umask 077
 umask 0022
 
