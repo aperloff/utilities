@@ -68,19 +68,30 @@ void rootlogon() {
    printf("\n \t SCRAM_ARCH: %s", SCRAM_ARCH.Data());
    printf("\n \t HOME: %s", HOME.Data());
    
-  gSystem->Load("libFWCoreFWLite.so"); printf("\n \t libFWCoreFWLite");
-  if(gROOT->GetVersionInt()>53418)
-     FWLiteEnabler::enable();
-  else
-     AutoLibraryLoader::enable();
-  gSystem->Load("libDataFormatsFWLite.so"); printf("\n \t libDataFormatsFWLite");
+   if (CMSSW_BASE.Length() > 0) {
+      gSystem->Load("libFWCoreFWLite.so"); printf("\n \t libFWCoreFWLite");
+      if(gROOT->GetVersionInt()>53418)
+         FWLiteEnabler::enable();
+      else
+         AutoLibraryLoader::enable();
+      gSystem->Load("libDataFormatsFWLite.so"); printf("\n \t libDataFormatsFWLite");
+   }
 
-  if(CMSSW_BASE.Contains("CMSDAS2017")) {
-     gSystem->AddIncludePath("-I$ROOFITSYS/include");
-     gROOT->ProcessLine(".include /cvmfs/cms.cern.ch/slc6_amd64_gcc491/lcg/roofit/5.34.18-cms3/include/");
-     gSystem->Load("libRooFit"); printf("\n \t libRooFit");
-     using namespace RooFit ;
-  }
+   if(CMSSW_BASE.Contains("CMSDAS2017")) {
+      gSystem->AddIncludePath("-I$ROOFITSYS/include");
+      gROOT->ProcessLine(".include /cvmfs/cms.cern.ch/slc6_amd64_gcc491/lcg/roofit/5.34.18-cms3/include/");
+      gSystem->Load("libRooFit"); printf("\n \t libRooFit");
+      using namespace RooFit ;
+   }
+   else if(CMSSW_BASE.Contains("CMSDAS/2020")) {
+      gSystem->AddIncludePath("-I$ROOFITSYS/include");
+      gROOT->ProcessLine(".include $ROOFITSYS/include/");
+      gSystem->Load("libRooFit"); printf("\n \t libRooFit");
+      using namespace RooFit ;
+   }
+   else {
+      gSystem->Load("libDataFormatsPatCandidates.so"); printf("\n \t libDataFormatsPatCandidates");
+   }
 
   if ((CMSSW_BASE.Contains("CMSSW_7_1_5")!=1 && CMSSW_BASE.Contains("CMSSW_8_1_0")!=1) && (TString(gSystem->pwd()).Contains("MatrixElement")==1 || TString(gSystem->pwd()).Contains("Summer12ME8TeV")==1)){
      gSystem->Load(CMSSW_BASE+"/lib/"+SCRAM_ARCH+"/libTAMUWWMEPATNtuple.so"); printf("\n \t libTAMUWWMEPATNtuple");

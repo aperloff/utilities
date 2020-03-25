@@ -48,6 +48,8 @@ def compare_checksum_dicts(args,dict1,dict2):
 		print_partial_list(dict2,"Partial dict of files from " + args.end + ":")
 		print_partial_list(diff_dict,"Partial dict of differences in " + args.start + " and " + args.end +":")
 
+	return diff_dict
+
 def diff_file_list(args,start_files,end_files):
 	print "Comparing the names in the file lists from " + col.bold + col.blue + args.start + col.endc + " and " + col.bold + col.blue + args.end + col.endc + " ...",
 	sys.stdout.flush()
@@ -80,7 +82,8 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 	function_start_time = time.time()
 
 	lines = []
-	with open(args.tmp+"/"+(args.listname if args.make else args.missingname), 'w') as f:
+	output_filename = args.listname if args.make else args.missingname
+	with open(args.tmp+"/"+output_filename, 'w') as f:
 		for item in start_list:
 			line = "%s%s/%s %s%s/%s%s\n" % (endslash_check(start_site.pfn),args.user1,item,
 											endslash_check(end_site.pfn),args.user2,endslash_check(args.outdir),item)
@@ -89,12 +92,12 @@ def format_and_write_transfer_lines(args,start_site,end_site,start_list):
 
 	print_done(function_start_time,time.time())
 
-	if len(lines)>0 and os.path.isfile(args.tmp+"/"+args.listname):
-		print "\t" + str(args.listname) + " created " + col.bold + col.green + "successfully!" + col.endc
-	elif os.path.isfile(args.tmp+"/"+args.listname) and len(lines)==0:
-		print "\t" + str(args.listname) + " created, but it is " + col.bold + col.yellow + "empty!" + col.endc
+	if len(lines)>0 and os.path.isfile(args.tmp+"/"+output_filename):
+		print "\t" + str(output_filename) + " created " + col.bold + col.green + "successfully!" + col.endc
+	elif os.path.isfile(args.tmp+"/"+output_filename) and len(lines)==0:
+		print "\t" + str(output_filename) + " created, but it is " + col.bold + col.yellow + "empty!" + col.endc
 	else:
-		print "\tCreation of " + str(args.listname) + col.bold + col.red +" failed!" + col.endc
+		print "\tCreation of " + str(output_filename) + col.bold + col.red +" failed!" + col.endc
 	
 	return lines
 
@@ -147,7 +150,9 @@ def get_file_list(args,site,user):
 	sys.stdout.flush()
 	function_start_time = time.time()
 
-	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),files_only=True,quiet=True,xurl=True)
+	filelist, directories = xrdfs_find.xrdfs_find(site.xrootd_endpoint,"/store/user/%s/%s" % (user,args.indir),
+	                                              files_only=True,quiet=True,xurl=True,ignore=args.ignore,
+	                                              maxdepth=args.maxdepth,skipstat=args.skipstat)
 	filelist_stripped = [f[f.find(user)+len(user)+1:] for f in filelist]
 	if (args.make or args.compare_names) and args.debug:
 		print "\nFound",str(len(filelist)),"at %s/store/user/%s/%s" % (site.xrootd_endpoint,user,args.indir)
@@ -244,13 +249,16 @@ Transfers can be monitored at:
 									 formatter_class=argparse.RawDescriptionHelpFormatter)
 	# Program options
 	program_group = parser.add_argument_group(title="Program Options", description="Options that guide the programs flow.")
-	program_group.add_argument("-d",	"--debug",			action="store_true",												help="Print debugging information (default = %(default)s)")
+	program_group.add_argument("-d",	"--debug",													action="store_true",		help="Print debugging information (default = %(default)s)")
 	program_group.add_argument("-l",	"--listname",		default="fts_transfer_file_list.txt",								help="The name for the file list (default = %(default)s)")
 	program_group.add_argument("-m",	"--missingname",	default="missing_transfer_list.txt",								help="The name of list for the files missing from the destination site (default = %(default)s)")
+	program_group.add_argument(			"--maxdepth",		default=9999,							type=int,					help="The maxdepth to use when getting the filelist. See xrdfs_find documentation for more details (default = %(default)s)")
 	program_group.add_argument("-n",	"--npool",			default=1,								type=int,					help="The number of simultaneous processes used to process the --compare_checksum option (default = %(default)s)")
-	program_group.add_argument("-P",	"--progress",		action="store_true",												help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
+	program_group.add_argument("-P",	"--progress",												action="store_true",		help="Displays a progress bar on actions which may take a long time (default = %(default)s)")
 	program_group.add_argument("-p",	"--protocol",		default="gfal", 						choices=["gfal","xrdfs"],	help="The protocol to use to get the checksum (default = %(default)s)")
 	program_group.add_argument("-r",	"--chk_range",		default=[0,None],						nargs=2,					help="The range of files to checksum from a list (-1 = None) (default = %(default)s)")
+	program_group.add_argument(			"--skipstat",		default="",															help="Do not get extra information for files with this key. See xrdfs_find documentation for more details (default = %(default)s)")
+	program_group.add_argument("-I",	"--ignore",			default=[],								nargs="+",					help="Ignore folder patterns. See xrdfs_find documentation for more details (default = %(default)s)")
 	program_group.add_argument("-t",	"--tmp",			default="./",														help="The directory in which to store the file lists (default = %(default)s)")
 	program_group_exclusive = program_group.add_mutually_exclusive_group(required=True)
 	program_group_exclusive.add_argument("-C",	"--compare_checksum",	action="store_true",	help="Compare the checksums of the files in the input and output directories (default = %(default)s)")
@@ -260,14 +268,18 @@ Transfers can be monitored at:
 
 	# FTS options
 	endpoint_group = parser.add_argument_group(title="Endpoint Options", description="Options necessary to format the FTS input file and to do the checks after the FTS transfer.")
-	endpoint_group.add_argument("-s",	"--start",		default="",					required=True,	help="The starting site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
-	endpoint_group.add_argument("-e",	"--end",		default="",					required=True,	help="The ending site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
-	endpoint_group.add_argument("-i",	"--indir",		default="",									help="The EOS directory storing the files to be transfered (default = %(default)s)")
-	endpoint_group.add_argument("-o",	"--outdir",		default="",									help="An output directory to contain the input hierarchy (default = %(default)s)")  
-	endpoint_group.add_argument("-u1",	"--user1",		default=os.environ["USER"],					help="The username of the input path (default = %(default)s)")
-	endpoint_group.add_argument("-u2",	"--user2",		default=os.environ["USER"],					help="The username of the output path (default = %(default)s)")
-	endpoint_group.add_argument("-g",	"--grep",		default=[],					nargs="+",		help="list of patterns in the file list to select for (default = %(default)s)")
-	endpoint_group.add_argument("-v",	"--vgrep",		default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
+	endpoint_group.add_argument("-s",	"--start",			default="",					required=True,	help="The starting site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
+	endpoint_group.add_argument("-e",	"--end",			default="",					required=True,	help="The ending site (i.e. T3_US_FNALLPC) for the file transfer (default = %(default)s)")
+	endpoint_group.add_argument("-i",	"--indir",			default="",									help="The EOS directory storing the files to be transfered (default = %(default)s)")
+	endpoint_group.add_argument("-o",	"--outdir",			default="",									help="An output directory to contain the input hierarchy (default = %(default)s)")  
+	endpoint_group.add_argument("-u1",	"--user1",			default=os.environ["USER"],					help="The username of the input path (default = %(default)s)")
+	endpoint_group.add_argument("-u2",	"--user2",			default=os.environ["USER"],					help="The username of the output path (default = %(default)s)")
+	endpoint_group.add_argument(		"--start_endpoint",	default="",									help="Override the start site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument(		"--end_endpoint",	default="",									help="Override the end site xrootd endpoint (default = %(default)s)")
+	endpoint_group.add_argument(		"--start_port",		default="",									help="Override the default start site xrootd endpoint port (default = %(default)s)")
+	endpoint_group.add_argument(		"--end_port",		default="",									help="Override the default end site xrootd endpoint port (default = %(default)s)")
+	endpoint_group.add_argument("-g",	"--grep",			default=[],					nargs="+",		help="list of patterns in the file list to select for (default = %(default)s)")
+	endpoint_group.add_argument("-v",	"--vgrep",			default=[],					nargs="+",		help="list of patterns in the file list to ignore (default = %(default)s)")
 
 	args, unknown = parser.parse_known_args()
 
@@ -295,13 +307,32 @@ Transfers can be monitored at:
 	print "Getting site information for " + col.bold + col.blue + args.start + col.endc + " ...",
 	sys.stdout.flush()
 	start_site_time = time.time()
-	start_site = getSiteInfo.main(site_alias=args.start, debug=False, fast=True, quiet=True)
+	start_site = getSiteInfo.getSiteInfo(site_alias=args.start, debug=False, fast=True, quiet=True)
 	print_done(start_site_time,time.time())
 	print "Getting site information for " + col.bold + col.blue + args.end + col.endc + " ...",
 	sys.stdout.flush()
 	end_site_time = time.time()
-	end_site = getSiteInfo.main(site_alias=args.end, debug=False, fast=True, quiet=True)
+	end_site = getSiteInfo.getSiteInfo(site_alias=args.end, debug=False, fast=True, quiet=True)
 	print_done(end_site_time,time.time())
+
+	if args.start_endpoint!="":
+		print "Overriding the xrootd endpoint for " + col.bold + col.blue + args.start + col.endc + " and setting it to " + col.bold + col.yellow + args.start_endpoint + col.endc
+		start_site.xrootd_endpoint = args.start_endpoint
+	if args.end_endpoint!="":
+		print "Overriding the xrootd endpoint for " + col.bold + col.blue + args.end + col.endc + " and setting it to " + col.bold + col.yellow + args.end_endpoint + col.endc
+		end_site.xrootd_endpoint = args.end_endpoint
+	if args.start_port:
+		print "Overriding the default xrootd endpoint port for " + col.bold + col.blue + args.start + col.endc + " and setting it to " + col.bold + col.yellow + args.start_port + col.endc
+		if start_site.xrootd_endpoint[-1]=="/":
+			start_site.xrootd_endpoint = start_site.xrootd_endpoint[:-1] + ":" + args.start_port + start_site.xrootd_endpoint[-1:]
+		else:
+			start_site.xrootd_endpoint = start_site.xrootd_endpoint + ":" + args.start_port + "/"
+	if args.end_port:
+		print "Overriding the default xrootd endpoint port for " + col.bold + col.blue + args.end + col.endc + " and setting it to " + col.bold + col.yellow + args.end_port + col.endc
+		if end_site.xrootd_endpoint[-1]=="/":
+			end_site.xrootd_endpoint = end_site.xrootd_endpoint[:-1] + ":" + args.end_port + end_site.xrootd_endpoint[-1:]
+		else:
+			end_site.xrootd_endpoint = end_site.xrootd_endpoint + ":" + args.end_port + "/"
 
 	start_files = get_file_list(args,start_site,args.user1)
 
@@ -372,7 +403,10 @@ Transfers can be monitored at:
 					print_done(start_pool_time,time.time(),header," "*(len_line_running-16))
 			else:
 				raise ValueError("The --npool argument must be >=1.")
-			compare_checksum_dicts(args,start_checksum_dict,end_checksum_dict)
+			diff_dict = compare_checksum_dicts(args,start_checksum_dict,end_checksum_dict)
+			if len(diff_dict) > 0:
+				# write a file to re-transfer the files with non-matching checksums
+				transfer_lines = format_and_write_transfer_lines(args,start_site,end_site,diff_dict)
 		elif args.compare_names:
 			diff_list = diff_file_list(args,start_files,end_files)
 			if len(diff_list) > 0:

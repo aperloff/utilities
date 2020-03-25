@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# For debugging a slowdown
+# Remember to (un)comment the block at the bottom
+#PS4='+ $(date "+%s.%N")\011 '
+#exec 3>&2 2>/tmp/bashstart.$$.log
+#set -x
+
 ###############
 # Environment #
 ###############
@@ -10,22 +16,35 @@ set -P
 # History
 # Avoid duplicates
 export HISTCONTROL=ignoreboth:erasedups
+# Don't save ls, ps and history commands
+export HISTIGNORE="ls:ll:ps:history:exit"
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
+# Add Date and Time to Bash History
+export HISTTIMEFORMAT="%h %d %H:%M:%S "
+# Increase the number of commands to remember in the command history (default = 500)
+export HISTSIZE=10000
+# Increase the maximum number of lines contained in the history file (default = 500)
+export HISTFILESIZE=10000
+# Expand variables on tab. This is a workaround for the bug in tab completion which adds a slash before the $
+# https://askubuntu.com/questions/70750/how-to-get-bash-to-stop-escaping-during-tab-completion
+if [[ `uname -r` == *"el7"* ]]; then
+	shopt -s direxpand
+fi
 # After each command, append to the history file and reread it
 export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
 
 umask 0022
 ulimit -s 11000
 
-# Source aliases and extensions
-if [ -f ~/.bashrc ]; then
-        . ~/.bashrc
-fi
-
-
 # GIT
 export CMSSW_GIT_REFERENCE=/cvmfs/cms.cern.ch/cmssw.git.daily/
+
+# Emacs
+# Taken from: https://superuser.com/questions/204236/how-can-i-open-a-file-read-only-from-command-line-with-emacs-vi-vim
+ev() {
+  emacs "$1" "$2" --eval '(setq buffer-read-only t)'
+}
 
 # Sets the editor for crontab -e
 export VISUAL='emacs -nw'
@@ -61,6 +80,8 @@ export SSL_CERT_DIR='/etc/pki/tls/certs:/etc/grid-security/certificates'
 case `hostname -s` in
 cmslpcgpu*|cmslpc-cvmfs-install*)
     source /cvmfs/cms-lpc.opensciencegrid.org/sl7/gpu/Setup.sh
+	export CPATH=/cvmfs/cms-lpc.opensciencegrid.org/sl7/usr/local/cuda/bin/include:$CPATH
+	export DYLD_LIBRARY_PATH=/cvmfs/cms-lpc.opensciencegrid.org/sl7/usr/local/cuda/lib:$DYLD_LIBRARY_PATH
 	;;
 esac
 
@@ -81,8 +102,10 @@ fi
 
 # cms-lpc.opencisncegrid.org
 case `hostname -s` in
-cmslpc4[0-2]*|cmslpcgpu*|cmslpc-cvmfs-install*)
+cmslpc1[0-9][0-9]*|cmslpcgpu*|cmslpc-cvmfs-install*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl7/bin/":${PATH}
+	export SINGULARITY_CACHEDIR="/uscms_data/d2/aperloff/.singularity/cache"
+	export SINGULARITY_LOCALCACHEDIR="/uscms_data/d2/aperloff/.singularity/cache"
     ;;
 cmslpc*)
 	export PATH="/cvmfs/cms-lpc.opensciencegrid.org/sl6/bin/":${PATH}
@@ -95,28 +118,19 @@ if [[ `hostname -s` != *cmslpc* ]]; then
 fi
 
 # User Scripts
-if [ ! -d "${HOME}/Scripts" ]; then
-    export PATH="${HOME}/Scripts":${PATH}
+if [ -d "${HOME}/Scripts" ]; then
+    export PATH="${HOME}/Scripts/":${PATH}
+	export PATH="${HOME}/Scripts/lpc-scripts/":${PATH}
+	export PATH="${HOME}/Scripts/utilities/":${PATH}
 fi
 
 # User Executables
-if [ ! -d "${HOME}/bin" ]; then
+if [ -d "${HOME}/bin" ]; then
     export PATH="${HOME}/bin":${PATH}
 fi
 
 # LaTeX
 #export TEXINPUTS .:~/latex/inputs:/usr/share/texmf/tex/latex/
-
-###########
-# Daemons #
-###########
-
-# Start ssh-agent
-if [ ! $SSH_AGENT_PID ]; then
-  eval "$(ssh-agent -s)" > /dev/null
-fi
-alias addkey='ssh-add ~/.ssh/id_rsa'
-trap 'test -n "$SSH_AGENT_PID" && eval `/usr/bin/ssh-agent -k`' 0
 
 #####################
 # Interactive Shell #
@@ -218,6 +232,11 @@ alias linuxinfo='uname -m && cat /etc/*release'
 # User Information
 alias myinfo='finger aperloff'
 
+# Encrypt/Decrypt Files
+# Use as 'encrypt <file>' or 'decrypt <file>.gpg'
+alias encrypt='gpg -c'
+alias dycrypt='gpg'
+
 # Kerberos
 alias kinit='/usr/krb5/bin/kinit'
 alias kinit_cern='/usr/bin/kinit -5 -A'
@@ -252,6 +271,7 @@ myscram() {
 alias cmslist='source /cvmfs/cms.cern.ch/cmsset_default.sh'
 alias cmsib1='source /cvmfs/cms-ib.cern.ch/week1/cmsset_default.sh'
 alias cmsib0='source /cvmfs/cms-ib.cern.ch/week0/cmsset_default.sh'
+#alias cmsenv='eval `scram runtime -sh`; PATH=${CMSSW_BASE}/test/${SCRAM_ARCH}/:${PATH}'
 
 # cache dir tag creator
 alias cachedir='echo "Signature: 8a477f597d28d172789f06886806bc55\n# This file is a cache directory tag.\n# For information about cache directory tags, see:\n#       http://www.brynosaurus.com/cachedir/" > CACHEDIR.TAG'
@@ -352,11 +372,12 @@ esac
 #xrdfs can use ls, mkdir, rm, rmdir, cat, tail, some 'query' (checksum for example), stat, ...
 #Example: xrdfs root://cmseos.fnal.gov/ ls /store/user/aperloff
 #Example: eosfind /store/user/aperloff
-alias eosdu='${HOME}/Scripts/utilities/EOS/eosdu'
 alias eosfind='eos root://cmseos.fnal.gov/ find'
 alias rxrdcp='python ${HOME}/Scripts/lpc_scripts/movefiles.py'
 alias eosinfo='eos root://cmseos.fnal.gov/ fileinfo'
 alias xrdfsloc='xrdfs cms-xrd-global.cern.ch locate -h -d'
+alias xrddebugon='export XRD_LOGLEVEL=Debug'
+alias xrddebugoff='unset XRD_LOGLEVEL'
 
 function list_redirectors {
 	declare -A redirectors
@@ -366,9 +387,20 @@ function list_redirectors {
 	redirectors['FNAL (site)']="cmsxrootd-site.fnal.gov"
 	redirectors['FNAL (EOS)']="cmseos.fnal.gov"
 	redirectors['Global']="cms-xrd-global.cern.ch"
-	printf "%-20s %s\n" "Location/Region" "Redirector"
-	printf "%-20s %s\n" "---------------" "----------"
-	for K in "${!redirectors[@]}"; do printf "%-20s %s\n" "$K:" "${redirectors[$K]}"; done | sort -n -k1
+	redirectors['Open Data']="eospublic.cern.ch"
+	redirectors['CERNBOX (T2_CH_CERNBOX)']="eosuser.cern.ch"
+	declare -A user_areas
+	user_areas['CERN (EOS)']="/store/user/<username>"
+	user_areas['Europe/Asia']="/store/user/<username>"
+	user_areas['FNAL']="/store/user/<username>"
+	user_areas['FNAL (site)']="/store/user/<username>"
+	user_areas['FNAL (EOS)']="/eos/uscms/store/user/<username>"
+	user_areas['Global']="/store/user/<username>"
+	user_areas['Open Data']="/eos/opendata/cms/"
+	user_areas['CERNBOX (T2_CH_CERNBOX)']="/eos/user/<first letter in username>/<username>/"
+	printf "%-30s %-30s %-30s\n" "Location/Region" "Redirector" "User Storage Path"
+	printf "%-30s %-30s %-30s\n" "---------------" "----------" "-----------------"
+	for K in "${!redirectors[@]}"; do printf "%-30s %-30s %-30s\n" "$K:" "${redirectors[$K]}" "${user_areas[$K]}"; done | sort -n -k1
 }
 
 # cern-get-sso-cookie
@@ -376,5 +408,99 @@ function list_redirectors {
 #alias sso-curl='curl --capath /etc/grid-security/certificates -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
 alias sso-curl='curl -L --cookie ~/private/ssocookie.txt --cookie-jar ~/private/ssocookie.txt'
 
+# FTS
+fts-status () {
+	#example: fts-status <job-id> <server>
+	fts-transfer-status -v -s ${2:-https://cmsfts3.fnal.gov:8446} ${1} -F
+}
+fts-priority-helper() {
+	args=()
+	args+=( '-s' "${1}" "${2}" "${3}" )
+	echo -e "# Command : fts-set-priority ${args[@]}"
+	IFS=$'\n' __priority_status=($(fts-set-priority "${args[@]}"));
+}
+fts-submit-helper() {
+  args=()
+  args+=( '-v' '-s' "${4}" '-f' "${1}" '-K' '--job-metadata' '{"issuer": "Alexx"}' "${5}")
+  (( "${3}" == "true" )) && args+=( '-o' )
+
+  if [[ "${2}" == "true" ]]; then
+	  echo -e "# Dry-run : true\n# Command : fts-transfer-submit ${args[@]}"
+  else
+	  echo -e "# Command : fts-transfer-submit ${args[@]}"
+	  IFS=$'\n' __job_id=($(fts-transfer-submit "${args[@]}"));
+	  printf "%s\n" "${__job_id[@]}";
+  fi
+}
+fts-submit () {
+	local dryrun="false"
+	local overwrite="false"
+	local other=""
+	local server="https://cmsfts3.fnal.gov:8446"
+	local priority=3
+	local usage="$FUNCNAME [-h] [-d] [-o] [-O <other options>] [-p <priority>] [-s <server name>] <file list to submit>
+    -- submits a list of file transfers to FTS.
+
+    where:
+        -d  echo the command rather than submitting to FTS (default: ${dryrun})
+        -h  show this help message
+        -o  overwrite any previously existing files at the destination (default: ${overwrite})
+        -O  passthrough for other fts-transfer-submit options
+        -p  set the job priority after submission (default: ${priority})
+        -s  change the FTS server (default: ${server})
+              commonly used servers:
+                FNAL: https://cmsfts3.fnal.gov:8446
+                FNAL (backup): https://cmsftssrv2.fnal.gov:8446
+                CERN: https://fts3.cern.ch:8449
+
+    example: fts-submit fts_transfer_file_list.txt"
+
+	local OPTIND OPTARG
+	while getopts 'hdoO:p:s:' option; do
+		case "$option" in
+			d) dryrun="true"
+			   ;;
+			h) echo "$usage"
+			   return 0
+			   ;;
+			o) overwrite="true"
+			   ;;
+			O) other=$OPTARG
+			   ;;
+			p) priority=$OPTARG
+			   ;;
+			s) server=$OPTARG
+			   ;;
+            :) printf "missing argument for -%s\n" "$OPTARG" >&2
+               echo "$usage" >&2
+               return -1
+               ;;
+            \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+                echo "$usage" >&2
+                return -2
+                ;;
+        esac
+	done
+	shift $((OPTIND - 1))
+
+	fts-submit-helper ${1} ${dryrun} ${overwrite} ${server} ${other}
+
+	if [[ "${dryrun}" == "false" ]]; then
+		local server_url=${server%:*}
+		echo
+		echo "Job status: ${server_url}:8449/fts3/ftsmon/#/job/${__job_id[-1]}"
+
+		if [[ "${priority}" != "3" ]]; then
+			echo "Job priority: ${priority}"
+			fts-priority-helper ${server} ${__job_id[-1]} ${priority}
+		fi
+	fi
+}
+
+# For debugging a slowdown
+#set +x
+#exec 2>&3 3>&-
+
 #Reinitiate history
 set -o history
+

@@ -3,9 +3,12 @@
 echo "Is this a draft? (y/n)"
 read IsDraft
 
-#echo $IsDraft
+if [[ -f "utils/tdr" ]]; then
+	cmd="utils/tdr --"
+else
+	cms="tdr --"
+fi
 
-cmd="tdr --"
 if [ $IsDraft == y ]; then
 	cmd=$cmd"draft"
 else
@@ -18,7 +21,8 @@ echo | awk 'BEGIN { format = "\t%-5s\n"}
 		{ printf "\t%-5s\n", "-----" }
 		{ printf format, "paper" }
 		{ printf format, "pas" }
-		{ printf format, "an" }'
+		{ printf format, "an" }
+                { printf format, "note" }'
 read style
 
 echo "Verbose? (y/n)"

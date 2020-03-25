@@ -1,0 +1,10 @@
+# Mount torreys:/nfs/data41
+
+# Dependencies
+# ------------
+# https://github.com/osxfuse/osxfuse/wiki/SSHFS
+
+sudo umount -f /Volumes/data41
+sudo mkdir /Volumes/data41
+#mount it
+sudo sshfs -o allow_other,defer_permissions aperloff@culogin.colorado.edu:/nfs/data41 /Volumes/data41/

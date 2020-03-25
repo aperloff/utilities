@@ -71,7 +71,7 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
         "CMSDAS",*|*,"CMSDAS")
-          PROJECT_PATHS=("CMSDAS/2017/" "CMSDAS/2018/" "CMSDAS/2019/")
+          PROJECT_PATHS=("CMSDAS/2017/" "CMSDAS/2018/" "CMSDAS/2019/" "CMSDAS/2020/")
           break
           ;;
         "HATS@LPC",*|*,"HATS@LPC")
@@ -91,7 +91,11 @@ select proj in "${PROJECTS[@]}"; do
           break
           ;;
 	    "SUSY",*|*,"SUSY")
-		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/" "SUSY")
+		  PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
+		  break
+		  ;;
+	    "TSABoard",*|*,"TSABoard")
+		  PROJECT_PATHS=("TSABoard/${SLC_VERSION}/")
 		  break
 		  ;;
         "VHbb",*|*,"VHbb")
