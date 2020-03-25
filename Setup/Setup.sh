@@ -131,7 +131,7 @@ done
 #find arrays for deleting
 for ((i=0; i<${#RELEASE_PATHS[@]}; i++)); do
   if [[ "$(array_contains scram_arch ${RELEASE_PATHS[$i]})" -eq "1" ]]; then
-    echo "WARRNING::${RELEASE_PATHS[$i]} is missing the lib/<SCRAM_ARCH> folder"
+    echo "WARNING::${RELEASE_PATHS[$i]} is missing the lib/<SCRAM_ARCH> folder"
     unset 'RELEASE_PATHS[$i]'
   fi
 done
