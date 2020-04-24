@@ -51,7 +51,7 @@ elif [[ ${HOSTNAME} = *"brazos"* ]]; then
 	WORKING_AREA="${HOME}"
 elif [[ ${HOSTNAME} = *"alexx"* ]]; then
 	WORKING_AREA="/Applications/"
-elif [[ ${HOSTNAME} = "login.uscms.org" ]]; then
+elif [[ ${HOSTNAME} = "login*.uscms.org" ]]; then
 	WORKING_AREA="/local-scratch/aperloff/"
 else
 	echo "Unknown working area. No known projects."
