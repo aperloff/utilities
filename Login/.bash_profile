@@ -497,6 +497,12 @@ fts-submit () {
 	fi
 }
 
+if [[ `hostname -s` != *cmslpc* ]]; then
+	usagedump() {
+		grep ${1} /uscms_data/d${2}/usagedump.txt
+	}
+fi
+
 # For debugging a slowdown
 #set +x
 #exec 2>&3 3>&-
