@@ -144,7 +144,7 @@ export PATH=${HOME}/bin:${PATH}
 #####################
 
 # Only load Liquid Prompt in interactive shells, not from a script or from scp
-[[ $- = *i* ]] && source ~/Scripts/liquidprompt/liquidprompt
+[[ $- = *i* ]] && source ~/liquidprompt/liquidprompt
 
 #Tab Completion
 #set autocorrect
@@ -549,7 +549,7 @@ torreys*)
   else
       prompt="Pick an option (1-${#VERSIONS[@]}):"
       PS3="$prompt "
-      echo "Which version of Vivado would you like to work on? (Default = 2018.2)"; \
+      echo "Which version of Vivado/Vitis would you like to work on? (Default = 2018.2)"; \
 	  select ver in "${VERSIONS[@]}"; do
 	      if ! [[ "${REPLY}" =~ ^-?[0-9]+$ ]]; then
 		  break
