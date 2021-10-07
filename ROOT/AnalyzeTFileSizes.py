@@ -171,11 +171,11 @@ def analyze_tfile_sizes(filename,
     for branch in tree.values():
         if tbranch not in ("", branch.name):
             continue
-        size_bytes = branch.uncompressedbytes(keycache = keycache) \
-                     if uncompressed else branch.compressedbytes(keycache = keycache)
+        size_bytes = branch.uncompressed_bytes if uncompressed else branch.compressed_bytes
         tbranchinfo_list.append(TBranchInfo(branch.name,size_bytes))
         ttreeinfo.sum_of_branch_sizes += tbranchinfo_list[-1].size
-        group_name = branch.name[0:branch.name.find(b"_")] if branch.name.find(b"_") >= 0 else branch.name
+        group_name = branch.name[0:branch.name.find("_")] if branch.name.find("_") >= 0 else \
+                     branch.name[0:branch.name.find(".")] if branch.name.find("fCoordinates") >= 0 else branch.name
         if does_not_contain(group_name, groupinfo_list, lambda x,y: x.name == y):
             groupinfo_list.append(GroupInfo(group_name))
         groupinfo_list[-1].size += tbranchinfo_list[-1].size
@@ -237,7 +237,7 @@ def analyze_tfile_sizes(filename,
                                        "-",
                                        wother))
     for itbi, tbi in enumerate(tbranchinfo_list):
-        string_to_print = fmt.format(tbi.name.decode('utf-8'),
+        string_to_print = fmt.format(tbi.name,
                                      max_length,
                                      tbi.get_size_per_event(ttreeinfo.nentries, branch_unit),
                                      wbytes,
@@ -249,7 +249,7 @@ def analyze_tfile_sizes(filename,
                                      wother)
         string_to_print += " " * 6
         if itbi < len (groupinfo_list):
-            string_to_print += fmt.format(groupinfo_list[itbi].name.decode('utf-8'),
+            string_to_print += fmt.format(groupinfo_list[itbi].name,
                                           max_length,
                                           groupinfo_list[itbi].get_size_per_event(ttreeinfo.nentries, branch_unit),
                                           wbytes,
