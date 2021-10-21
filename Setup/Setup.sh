@@ -86,6 +86,10 @@ select proj in "${PROJECTS[@]}"; do
 			PROJECT_PATHS=("JEC/gitty/" "JEC/")
 			break
 			;;
+		"L1TK",*|*,"L1TK")
+			PROJECT_PATHS=("L1TK/${SLC_VERSION}")
+			break
+			;;
 		"MLJEC",*|*,"MLJEC")
 			PROJECT_PATHS=("MLJEC/")
 			break
@@ -98,8 +102,8 @@ select proj in "${PROJECTS[@]}"; do
 			PROJECT_PATHS=("SUSY/${SLC_VERSION}/")
 			break
 			;;
-		"TSABoard",*|*,"TSABoard")
-			PROJECT_PATHS=("TSABoard/${SLC_VERSION}/")
+		"GTT",*|*,"GTT")
+			PROJECT_PATHS=("GTT/${SLC_VERSION}/")
 			break
 			;;
 		"VHbb",*|*,"VHbb")
@@ -221,7 +225,7 @@ if [[ -z "${SELECTED_RELEASE_PATH}" ]]; then
 	echo "No release selected"
 elif [[ "${proj}" == "EXO" ]] && [[ "${SELECTED_RELEASE_PATH}" != *"CMSSW"* ]]; then
 	cd ${SELECTED_RELEASE_PATH}/
-	source coffeaenv/bin/activate
+	source init.sh
 
 	#Check for a voms-proxy
 	test=`voms-proxy-info`
