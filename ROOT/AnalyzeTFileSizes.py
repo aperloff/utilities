@@ -165,7 +165,7 @@ def analyze_tfile_sizes(filename,
 
     # Get the sum of all of the branches
     keycache = {}
-    ttreeinfo = TTreeInfo(nentries = len(tree), nbranches = len(tree.values()))
+    ttreeinfo = TTreeInfo(nentries = tree.num_entries, nbranches = len(tree.values()))
     tbranchinfo_list = []
     groupinfo_list = []
     for branch in tree.values():
