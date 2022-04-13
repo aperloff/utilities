@@ -39,25 +39,33 @@ class Unit(Enum):
 
 class TTreeInfo:
     """Contains information pertaining to the entire TTree."""
-    def __init__(self, nentries = 0, nbranches=0, sum_of_branch_sizes=0):
+    def __init__(self, nentries = 0, nbranches = 0, sum_of_branch_sizes = 0, files = None):
         self.nentries = nentries
         self.nbranches = nbranches
         self.sum_of_branch_sizes = sum_of_branch_sizes
+        self.files = files
 
     def __repr__(self):
         """Return a formatted string representation of the class object."""
-        return f"TTreeInfo({self.nentries}, {self.nbranches}, {self.sum_of_branch_sizes})"
+        return f"TTreeInfo({self.nentries}, {self.nbranches}, {self.sum_of_branch_sizes}, {self.files})"
 
     def __add__(self, rhs):
         """Add the information from another TTreeInfo into this one and return a new TTreeInfo."""
         if rhs is None:
-            return TTreeInfo(self.nentries, self.nbranches, self.sum_of_branch_sizes)
+            return TTreeInfo(self.nentries, self.nbranches, self.sum_of_branch_sizes, self.files)
         if self.nbranches != rhs.nbranches:
             print("WARNING::Can't add TTreeInfo objects which don't contain the same number of branches.")
             return
         nentries = self.nentries + rhs.nentries
         sum_of_branch_sizes = self.sum_of_branch_sizes + rhs.sum_of_branch_sizes
-        return TTreeInfo(nentries, self.nbranches, sum_of_branch_sizes)
+        files = None
+        if self.files is not None and rhs.files is not None:
+            files = self.files + rhs.files
+        elif rhs.files is None and self.files is not None:
+            files = self.files
+        elif self.files is None and rhs.files is not None:
+            file = rhs.files
+        return TTreeInfo(nentries, self.nbranches, sum_of_branch_sizes, files)
 
     def __iadd__(self, rhs):
         """Add the information from another TTreeInfo into this one."""
@@ -68,6 +76,10 @@ class TTreeInfo:
             return
         self.nentries += rhs.nentries
         self.sum_of_branch_sizes += rhs.sum_of_branch_sizes
+        if rhs.files is not None and self.files is not None:
+            self.files += rhs.files
+        elif self.files is None and rhs.files is not None:
+            self.files = rhs.files
         return self
 
     def get_size(self, unit=Unit.Byte):
@@ -76,6 +88,8 @@ class TTreeInfo:
 
     def get_size_per_event(self, unit=Unit.Byte):
         """Return the size of the TTree per event."""
+        if self.nentries == 0:
+            return -1
         return self.sum_of_branch_sizes / self.nentries / float(unit.value)
 
 class TBranchInfo:
@@ -86,6 +100,8 @@ class TBranchInfo:
 
     def get_size_per_event(self, nentries, unit=Unit.Byte):
         """Return the size of the branch per event."""
+        if nentries == 0:
+            return -1
         return self.size / float(nentries) / float(unit.value)
 
     def get_fraction(self, den):
@@ -93,6 +109,8 @@ class TBranchInfo:
         being passed to the function. Usually the denominator is the total size of all branches or all branches
         before a specific index.
         """
+        if den == 0:
+            return -1
         return 100.0 * self.size / float(den)
 
 class GroupInfo:
@@ -103,6 +121,8 @@ class GroupInfo:
 
     def get_size_per_event(self, nentries, unit=Unit.Byte):
         """Return the size of the group per event."""
+        if nentries == 0:
+            return -1
         return self.size / float(nentries) / float(unit.value)
 
     def get_fraction(self, den):
@@ -110,6 +130,8 @@ class GroupInfo:
         being passed to the function. Usually the denominator is the total size of all branches or all branch
         groups before a specific index.
         """
+        if den == 0:
+            return -1
         return 100.0 * self.size / float(den)
 
 def collect_information_per_tree(tree, tbranch, uncompressed):
@@ -117,7 +139,7 @@ def collect_information_per_tree(tree, tbranch, uncompressed):
     returns three collections, the TreeInfo object, a list of BranchInfo objects, and a list of branch-level
     GroupInfo objects.
     """
-    ttreeinfo = TTreeInfo(nentries = tree.num_entries, nbranches = len(tree.values()))
+    ttreeinfo = TTreeInfo(nentries = tree.num_entries, nbranches = len(tree.values()), files = [tree.file.file_path])
     tbranchinfo_list = []
     groupinfo_list = []
     for branch in tree.values():
@@ -164,6 +186,7 @@ def format_output(filename,
     output_string = f"File: {filename}\n"
     output_string += f"Tree: {treename}\n"
     output_string += f"Entries: {ttreeinfo.nentries:,d}\n"
+    output_string += f"Branches: {ttreeinfo.nbranches}\n"
     output_string += "Size: {0:0.2f} {1} ({2})\n".format(ttreeinfo.get_size(tree_unit),
                                                          tree_unit.name,
                                                          "uncompressed" if uncompressed else "compressed")
@@ -289,6 +312,8 @@ def running_total_size(the_list, end_index):
 
 def running_total_fraction(the_list, end_index, den):
     """Calculate the fraction of the event size taken by all branches from index 0 to end_index."""
+    if den == 0:
+        return -1
     return 100.00 * running_total_size(the_list, end_index) / float(den)
 
 # pylint: disable=too-many-locals

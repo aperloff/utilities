@@ -1,18 +1,34 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse, itertools, os, re
 from operator import ior
 
-# Must use a python release from CMSSW 93X or higher for the pyxrootd bindings
-min_cmssw_version = (9,3,0)
+# Python 2-3 compatibility
 try:
-	cmssw_version = tuple(os.environ['CMSSW_VERSION'].split('_')[1:4])
-except:
-	cmssw_version = (0,0,0)
-if cmssw_version < min_cmssw_version:# and not kwargs['ignore_cmssw']:
-	raise RuntimeError("Must be using CMSSW_%s_%s_%s or higher to get the pyxrootd bindings. You are currently using CMSSW_%s_%s_%s or some variant." % (min_cmssw_version+cmssw_version))
-else:
+	import future, builtins, past, six
+except ImportError as error:
+	raise ImportError("Unable to import the python2/3 compatibility modules (future, builtins, past, six)")
+
+try:
+	from functools import reduce
+except ImportError as error:
+	pass
+
+## Must use a python release from CMSSW 93X or higher for the pyxrootd bindings
+#min_cmssw_version = (9,3,0)
+#try:
+#	cmssw_version = tuple(os.environ['CMSSW_VERSION'].split('_')[1:4])
+#except:
+#	cmssw_version = (0,0,0)
+#if cmssw_version < min_cmssw_version:# and not kwargs['ignore_cmssw']:
+#	raise RuntimeError("Must be using CMSSW_%s_%s_%s or higher to get the pyxrootd bindings. You are currently using CMSSW_%s_%s_%s or some variant." % (min_cmssw_version+cmssw_version))
+#else:
+#	from XRootD import client
+#	from XRootD.client.flags import DirListFlags, StatInfoFlags, OpenFlags, MkDirFlags, QueryCode
+try:
 	from XRootD import client
 	from XRootD.client.flags import DirListFlags, StatInfoFlags, OpenFlags, MkDirFlags, QueryCode
+except ImportError as error:
+	raise ImportError("Must be using CMSSW_%s_%s_%s or higher to get the pyxrootd bindings. You are currently using CMSSW_%s_%s_%s or some variant." % (min_cmssw_version+cmssw_version))
 
 # pyxrootd does not tell you what flags the or'ed value to which they correspond.
 # Thus we need to form a mappign between the or'ed values and the flags they represent.
@@ -92,9 +108,9 @@ def walk(xrdfs, top, depth=1, topdown=True, onerror=None, maxdepth=9999, filenam
 	from XRootD import client
 	xrdfs = client.FileSystem(<xrootd_endpoint>)
 	for root, dirs, files in walk(xrdfs,<path>,fullpath=True):
-		print root
-		print dirs
-		print files
+		print(root)
+		print(dirs)
+		print(files)
 		if 'noreplica' in dirs:
 			dirs.remove('noreplica') # don't visit noreplica directories
 	"""
@@ -162,22 +178,29 @@ def locate_disk_server(xrdfs,path,debug=False):
 	Takes in an XRootD file system object and a directory path.
 	Returns an XRootD file system object
 	"""
-        if debug: print "xrdfs_find::locate_disk_server Finding list of path locations ... "
+	if debug: print("xrdfs_find::locate_disk_server Finding list of path locations ... ")
 	status, locations = xrdfs.deeplocate(path, OpenFlags.NOWAIT)
-        if debug: print "xrdfs_find::locate_disk_server List of locations found."
+	if debug: print("xrdfs_find::locate_disk_server List of locations found.")
 	if status.status != 0:
 		raise Exception("XRootD failed to locate %s%s" % (str(xrdfs.url),path))
 	for location in locations:
-                if debug: print "\tTrying location root://"+str(location.address)+"/"
+		if debug: print("\tTrying location root://"+str(location.address)+"/")
 		xrdfs_tmp = client.FileSystem("root://"+location.address+"/")
 		status, listing = xrdfs_tmp.dirlist(path)
 		if status.code == 0:
-                        if debug: print "xrdfs_find::locate_disk_server Valid address is root://"+str(location.address)+"/"
+			if debug: print("xrdfs_find::locate_disk_server Valid address is root://"+str(location.address)+"/")
 			return xrdfs_tmp
-	raise Exception("XRootD failed to locate any valid disk servers for %s%s" % (str(xrdfs.url),path))
+	if debug: print("\tTrying location %s" % (str(xrdfs.url)))
+	xrdfs_tmp = client.FileSystem(str(xrdfs.url))
+	status, listing = xrdfs_tmp.dirlist(path)                
+	if status.code == 0:
+		if debug: print("xrdfs_find::locate_disk_server Valid address is root://"+str(location.address)+"/")
+		return xrdfs_tmp
+	else:
+		raise Exception("XRootD failed to locate any valid disk servers for %s%s" % (str(xrdfs.url),path))
 
 def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=False, debug=False, directories_only=False, files_only=False, \
-               fullpath=False, grep=[], ignore=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, skipstat='', vgrep=[], xurl=False):
+			   fullpath=False, grep=[], ignore=[], ignore_cmssw=False, maxdepth=9999, name='', quiet=False, skipstat='', vgrep=[], xurl=False):
 	"""
 	Returns a list of files and directories found within <xrootd_enpoint>/path/.
 	This is the XRootD equivalent to the 'eos <xrootd_endpoint> find' command.
@@ -195,9 +218,9 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 
 	for root, walkdirs, dirs, files in walk(xrdfs,path,topdown=not bottomup, maxdepth=maxdepth, filename_filter=name, fullpath=fullpath, xurl=xurl, skipstat=skipstat):
 		if debug:
-			print root
-			print dirs
-			print files
+			print(root)
+			print(dirs)
+			print(files)
 
 		# Filter files by grep and vgrep
 		if len(grep)>0:
@@ -228,18 +251,18 @@ def xrdfs_find(xrootd_endpoint, path, bottomup=False, childcount=False, count=Fa
 	if count:
 		# If the count option is set, return the number of files and folders found
 		if not quiet:
-			print "nfiles="+str(len(all_files))+" ndirectories="+str(len(all_directories))
+			print("nfiles="+str(len(all_files))+" ndirectories="+str(len(all_directories)))
 		return len(all_files), len(all_directories)
 	else:
 		# If not count, then return the list of files and the list of folders
 		if not quiet:
 			if len(all_files) > 0:
-				print '\n'.join(map(str,all_files))
+				print('\n'.join(map(str,all_files)))
 			if len(all_directories) > 0:
 				if childcount:
-					print '\n'.join("%s ndir=%i nfiles=%i" % tup for tup in all_directories)
+					print('\n'.join("%s ndir=%i nfiles=%i" % tup for tup in all_directories))
 				else:
-					print '\n'.join("%s" % tup[0] for tup in all_directories)
+					print('\n'.join("%s" % tup[0] for tup in all_directories))
 		return all_files, [tup[0] for tup in all_directories]
 
 if __name__ == "__main__":
@@ -265,20 +288,20 @@ from XRootD.client.flags import DirListFlags, StatInfoFlags, OpenFlags, MkDirFla
 
 xrdfs = client.FileSystem("<xrootd_endpoint>")
 status, listing = xrdfs.dirlist("/store/user/<path>",DirListFlags.STAT)
-print status
+print(status)
 
 xrdfs = client.FileSystem("<xrootd_endpoint>")
 status, locations = xrdfs.deeplocate("/store/user/<path>", OpenFlags.NOWAIT)
-print locations
-print locations.__dict__['locations'][0].address
+print(locations)
+print(locations.__dict__['locations'][0].address)
 xrdfs2 = client.FileSystem("root://"+locations.__dict__['locations'][0].address)
 status, listing = xrdfs2.dirlist("/store/user/<path>",DirListFlags.STAT)
-print status
-print listing
+print(status)
+print(listing)
 
 xrdfs = client.FileSystem("<xrootd_endpoint>")
 status, locations = xrdfs.deeplocate("/store/user/<path>", OpenFlags.NOWAIT)
-print locations
+print(locations)
 
 import xrdfs_find
 xrdfs_find.xrdls(xrdfs,"/store/user/<path>")
@@ -297,7 +320,7 @@ xrdfs_find.xrdfs_find(<xrootd_endpoint>,<path>)
 									 formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.add_argument("xrootd_endpoint",			metavar='mgm-url',									help="XRootD URL of the management server e.g. root://<hostname>[:<port>]")
 	parser.add_argument("-b",	"--bottomup",		action="store_true",								help="The default for walk is to go from top down. This replaces that with a bottom \
-	                    																					  up approach. (default = %(default)s)")
+																											  up approach. (default = %(default)s)")
 	parser.add_argument("-c",	"--count",			action="store_true",								help="Just print global counters for files/dirs found (default = %(default)s)")
 	parser.add_argument(		"--childcount",		action="store_true",								help="Print the number of children in each directory (default = %(default)s)")
 	parser.add_argument("-D",	"--debug",			action="store_true",								help="Print debugging information (default = %(default)s)")
@@ -306,15 +329,15 @@ xrdfs_find.xrdfs_find(<xrootd_endpoint>,<path>)
 	parser.add_argument("-F",	"--fullpath",		action="store_true",								help="Return the full path of the file/folder (default = %(default)s)")
 	parser.add_argument("-g",	"--grep",			default=[],				nargs="+",					help="List of patterns to select for in both file and directory names (default = %(default)s)")
 	parser.add_argument("-i",	"--ignore",			default=[],				nargs="+",					help="List of patterns to ignore for folder names. Unlike vgrep, which is a mask, ignore will \
-	                    																					  stop the recursion from going down any path which matches on of these patterns. (default = %(default)s)")
+																											  stop the recursion from going down any path which matches on of these patterns. (default = %(default)s)")
 	parser.add_argument("-I",	"--ignore_cmssw",	action="store_true",								help="Ignore the CMSSW dependency in case using some other source for python with \
-	                    																					  the necessary libraries (default = %(default)s)")
+																											  the necessary libraries (default = %(default)s)")
 	parser.add_argument("-m",	"--maxdepth",		default=9999, 			type=int,					help="Descend only <maxdepth> levels (default = %(default)s)")
 	parser.add_argument("-n",	"--name",			default="",											help="Find filename by regex (default = %(default)s)")
 	parser.add_argument("-q",	"--quiet",			action="store_true",								help="Supress all printouts (default = %(default)s)")
 	parser.add_argument("-s",	"--skipstat",		default="",											help="If this is set, do not automatically get the stat information for a directory. Only stat the \
-	                    																					  files/folders with this key. A good choice would be a period. This is useful for very large \
-	                    																					  directories. (default = $(default)s)")
+																											  files/folders with this key. A good choice would be a period. This is useful for very large \
+																											  directories. (default = %(default)s)")
 	parser.add_argument("-x",	"--xurl",			action="store_true",								help="Print the XRootD URL instead of the path name (default = %(default)s)")
 	parser.add_argument("-v",	"--vgrep",			default=[],				nargs="+",					help="List of patterns to ignore in both file and directory names (default = %(default)s)")
 	parser.add_argument("path",																			help="The path in which to search for files and directories")

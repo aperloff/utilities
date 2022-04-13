@@ -40,7 +40,7 @@ def get_file_list(path):
 
 def get_results_string(path, nfiles, treename, ttreeinfo, dataset_unit, entry_unit, uncompressed):
     output_string = f"Basepath for files: {path}\n"
-    output_string += f"Number of files in sample: {nfiles}"
+    output_string += f"Number of files in sample: {nfiles}\n"
     output_string += f"Tree: {treename}\n"
     output_string += f"Entries: {ttreeinfo.nentries:,d}\n"
     output_string += "Size: {0:0.2f} {1} ({2})\n".format(ttreeinfo.get_size(dataset_unit),
@@ -97,9 +97,16 @@ def run_checks(path, quiet):
 # From https://examples.dask.org/delayed.html
 @dask.delayed
 def sum_ttreeinfo_list(delayed_list):
-    ttreeinfo_sum = delayed_list[0]
-    for delayed_item in delayed_list[1:]:
-        ttreeinfo_sum += delayed_item
+    first_non_none_index = next((index for index, value in enumerate(delayed_list) if value is not None), -1)
+    ttreeinfo_sum = None #delayed_list[0]
+    if first_non_none_index >= 0:
+        ttreeinfo_sum = delayed_list[first_non_none_index]
+        for i, delayed_item in enumerate(delayed_list[first_non_none_index + 1:]):
+            if delayed_item is None:
+                raise RuntimeError(f"delayed_item {i + 1} is None")
+            if delayed_item.nbranches != delayed_list[0].nbranches:
+                raise RuntimeError(f"delayed_item {i + 1} has nbranches = {delayed_item.nbranches} whereas the first item has nbranches = {delayed_list[0].nbranches}\n{delayed_list[0]}\n{delayed_item}")
+            ttreeinfo_sum += delayed_item
     return ttreeinfo_sum
 
 def analyze_dataset_sizes(path,
@@ -128,7 +135,7 @@ def analyze_dataset_sizes(path,
 
     #Open the first file to set the initial tree values
     treename, tree = open_file_get_tree(file_list[0], ttree, tdirectory)
-    ttreeinfo = dask.delayed(TTreeInfo)(nentries = tree.num_entries, nbranches = len(tree.values()), sum_of_branch_sizes = tree.uncompressed_bytes if uncompressed else tree.compressed_bytes)
+    ttreeinfo = dask.delayed(TTreeInfo)(nentries = tree.num_entries, nbranches = len(tree.values()), sum_of_branch_sizes = tree.uncompressed_bytes if uncompressed else tree.compressed_bytes, files = [file_list[0]])
     ttreeinfo_list = [ttreeinfo]
 
     # Open the remaining files and add the tree values
@@ -136,7 +143,7 @@ def analyze_dataset_sizes(path,
         res = dask.delayed(open_file_get_tree)(filename, ttree, tdirectory)
         _, tree = res[0], res[1]
         ttree_per_file_len = dask.delayed(len)(tree.values())
-        ttreeinfo_per_file = dask.delayed(TTreeInfo)(nentries = tree.num_entries, nbranches = ttree_per_file_len, sum_of_branch_sizes = tree.uncompressed_bytes if uncompressed else tree.compressed_bytes)
+        ttreeinfo_per_file = dask.delayed(TTreeInfo)(nentries = tree.num_entries, nbranches = ttree_per_file_len, sum_of_branch_sizes = tree.uncompressed_bytes if uncompressed else tree.compressed_bytes, files = [filename])
         ttreeinfo_list.append(ttreeinfo_per_file)
 
     ttreeinfo_sum = sum_ttreeinfo_list(ttreeinfo_list)
@@ -157,7 +164,7 @@ def analyze_dataset_sizes(path,
     if not quiet:
         print(output_string)
 
-    return ttreeinfo_sum
+    return ttreeinfo_sum, ttreeinfo_list
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "Return the average size of an event from a list of files",
