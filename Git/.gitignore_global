@@ -1,37 +1,144 @@
-*.pyc
-*.txt~
-*.h~
-*.C~
-*.hh~
-*.cc~
-*.py~
-*.sh~
-*.csh~
-*.cfg~
-*.xml~
-*.pbs~
-*.pbs.o*
-*.pbs.e*
-__init__.py
-ReadMe~
-*.root
+## Core latex/pdflatex auxiliary files:
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.xwm
+
+## Intermediate documents:
+*.dvi
+# these rules might exclude image files for figures etc.
+# *.ps
+# *.eps
+# *.pdf
+*TAMUTemplate.pdf
+
+## Bibliography auxiliary files (bibtex/biblatex/biber):
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
+*.bak
+
+## Build tool auxiliary files:
+*.fdb_latexmk
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+*.synctex
+
+## Auxiliary and intermediate files from other packages:
+
+# algorithms
+*.alg
+*.loa
+
+# amsthm
+*.thm
+
+# beamer
+*.nav
+*.snm
+*.vrb
+
+# condor log files
 *.condor
 *.stderr
 *.stdout
-*.hh.backup
-*.cc.backup
+
+# CMS Remote Analysis Builder (CRAB) files
 *crab.history
 crab.log
+
+#(e)ledmac/(e)ledpar
+*.end
+*.[1-9]
+*.[1-9][0-9]
+*.[1-9][0-9][0-9]
+*.[1-9]R
+*.[1-9][0-9]R
+*.[1-9][0-9][0-9]R
+
+# glossaries
+*.acn
+*.acr
+*.glg
+*.glo
+*.gls
+
+# hyperref
+*.brf
+
+# listings
+*.lol
+
+# makeidx
+*.idx
+*.ilg
+*.ind
+*.ist
+
+# minitoc
+*.maf
+*.mtc
+*.mtc0
+
+# minted
+*.pyg
+
+# nomencl
+*.nlo
+
+# pbs log files
+*.pbs.o*
+*.pbs.e*
+
+# python
+*.pyc
+__init__.py
+
+# ROOT files
+*.root
+*.rootmap
+
+# sagetex
+*.sagetex.sage
+*.sagetex.py
+*.sagetex.scmd
+
+# sympy
+*.sout
+*.sympy
+sympy-plots-for-*.tex/
+
+# todonotes
+*.tdo
+
+# xindy
+*.xdy
+
+#executables
+*.exe
+
+# OSX
+.DS_Store
+
+# Sublime Text 3
+*.sublime-project
+*.sublime-workspace
+
+# Emacs backup files
+*~
+
+# Other
+*.o
 *_C.so
 *_C.d
 *_cc.d
 *_cxx.so
 *_cxx.d
-*.cxx~
-201?_??_??_*
-*.ps
-*.rootmap
-*.history
-*.backup
-*run_MatrixElement/test/emptyPSets/emptyPSet_*_cfg.py
-*run_MatrixElement/test/crabConfigFiles/crab_*_cfg.py

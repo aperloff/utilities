@@ -1,13 +1,13 @@
 [core]
-    editor = /usr/bin/emacs -nw
-	excludesfile = /uscms/homes/a/aperloff/.gitignore_global
-	whitespace = cr-at-eol
+    editor = /usr/local/bin/emacs -nw
+    excludesfile = ${HOME}/.gitignore_global
+    whitespace = cr-at-eol
 [user]
-	name = Alexx Perloff
-	email = Alexx.Perloff@Colorado.edu
-	github = aperloff
+    name = Alexx Perloff
+    email = Alexx.Perloff@Colorado.edu
+    github = aperloff
 [color]
-	ui = true
+    ui = true
     branch = auto
     diff = auto
     status = auto
@@ -27,6 +27,8 @@
 #    added = yellow
 #    changed = green
 #    untracked = cyan
+[http]
+        emptyAuth = true
 [alias]
     # Some aliases taken from:
     #  https://www.atlassian.com/blog/git/advanced-git-aliases
@@ -57,12 +59,12 @@
 
     # List remotes
     rem="!git config -l | grep remote.*url | tail -n +2"
-	# Add a remote
+    # Add a remote
     # Third parameter defaults to GitHub, but can be changed if needed
     ra = "!f() { git remote add $1 ${3-git@github.com}:$2.git; }; f"
 
     # List commits in graph form
-	#lol = log --graph --decorate --pretty=oneline --abbrev-commit
+    #lol = log --graph --decorate --pretty=oneline --abbrev-commit
     lol = log --graph --decorate --pretty=format:"%C(yellow)%h%C(auto)%d\\ %Creset%s%Cblue\\ [%cn]" --abbrev-commit
     # Default look for short git log
     le = log --oneline --decorate
