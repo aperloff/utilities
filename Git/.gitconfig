@@ -4,7 +4,7 @@
     whitespace = cr-at-eol
 [user]
     name = Alexx Perloff
-    email = Alexx.Perloff@Colorado.edu
+    email = Slipstream1138@comcast.net
     github = aperloff
 [color]
     ui = true
@@ -129,7 +129,7 @@
     rh2 = reset HEAD^^ --hard
 
     # Stash operations
-	sp = stash pop
+    sp = stash pop
     sl = stash list
     sa = stash apply
     ss = stash save
@@ -142,15 +142,29 @@
     #  but you can pass a different one if you need to
     bclean = "!f() { git branch --merged ${1-master} | grep -v " ${1-master}$" | xargs -r git branch -d; }; f"
 
-	# Commit aliases
-	fix = commit --amend --no-edit
+    # Commit aliases
+    fix = commit --amend --no-edit
     caa = commit -a --amend -C HEAD
 
-	# From scripts
-	delete-branch = !${HOME}/Scripts/utilities/Git/git-delete-branch
-	move-commits = !${HOME}/Scripts/utilities/Git/git-move-commits
-	pull-pr = !${HOME}/Scripts/utilities/Git/git-pull-pr
-	copy-untracked = !${HOME}/Scripts/utilities/Git/git-copy-untracked
+    # Use this after removing a large file from a repo to completely clear the leftover history.
+    # Be careful!
+    # Reference: https://stackoverflow.com/questions/2100907/how-to-remove-delete-a-large-file-from-commit-history-in-the-git-repository
+    clean-dead = "!f() { git reflog expire --expire=now --all && git gc --prune=now --aggressive; }; f"
+
+    # Manage size of repo
+    # Reference: https://stackoverflow.com/questions/10622179/how-to-find-identify-large-commits-in-git-history
+    size = count-objects -vH
+    # Size of files
+    fsize = "!f() { git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | sort --numeric-sort --key=2 | cut -c 1-12,41- | $(command -v gnumfmt || echo numfmt) --field=2 --to=iec-i --suffix=B --padding=7 --round=nearest; }; f"
+    # Size of files over 1 MB
+    fsize-1MB = "!f() { git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | sed -n 's/^blob //p' | awk '$2 >= 2^20' | sort --numeric-sort --key=2 | cut -c 1-12,41- | $(command -v gnumfmt || echo numfmt) --field=2 --to=iec-i --suffix=B --padding=7 --round=nearest; }; f"
+
+
+    # From scripts
+    delete-branch = !${HOME}/Scripts/utilities/Git/git-delete-branch
+    move-commits = !${HOME}/Scripts/utilities/Git/git-move-commits
+    pull-pr = !${HOME}/Scripts/utilities/Git/git-pull-pr
+    copy-untracked = !${HOME}/Scripts/utilities/Git/git-copy-untracked
 [cms]
 	protocol = ssh
 [filter "lfs"]
