@@ -14,10 +14,10 @@ function get_script_path() {
 }
 
 declare -A files_unified=( ["rootlogon.C"]="ROOT" [".rootrc"]="ROOT" \
-                   		   [".gitconfig"]="Git" [".gitignore_global"]="Git" \
-                   		   [".k5login"]="Login" [".emacs"]="Login" [".forward"]="Login" )
-declare -A files_tcsh=(    [".login"]="Login" [".cshrc"]="Login" [".tcshrc.complete"]="Login" [".tcshrc.logout"]="Login" )
-declare -A files_bash=(    [".bashrc"]="Login" [".bash_profile"]="Login" [".profile"]="Login" [".bash_logout"]="Login" ["liquidpromptrc-dist"]="../liquidprompt")
+                   		     [".gitconfig"]="Git" [".gitignore_global"]="Git" \
+                   		     [".k5login"]="Login/kerberos" [".emacs"]="Login/emacs" [".forward"]="Login/kerberos" )
+declare -A files_tcsh=(    [".login"]="Login/tcsh" [".cshrc"]="Login/csh" [".tcshrc.complete"]="Login/tcsh" [".tcshrc.logout"]="Login/tcsh" )
+declare -A files_bash=(    [".bashrc"]="Login/bash" [".bash_profile"]="Login/bash" [".profile"]="Login/bash" [".bash_logout"]="Login/bash" ["liquidpromptrc-dist"]="../liquidprompt")
 
 if [ `basename "$SHELL"` == "bash" ]; then
 	for key in ${!files_bash[@]}; do

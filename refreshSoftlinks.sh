@@ -8,7 +8,7 @@ declare -A links=(
                   ["lpccvmfs"]="/uscms_data/d1/lpccvmfs" \
                   ["nobackup"]="/uscms_data/d2/aperloff" \
                   ["publicweb"]="/publicweb/a/aperloff/" \
-				  ["3DayLifetime"]="/uscmst1b_scratch/lpc1/3DayLifetime/" \
+				          ["3DayLifetime"]="/uscmst1b_scratch/lpc1/3DayLifetime/" \
                   )
 
 for link in "${!links[@]}"; do
