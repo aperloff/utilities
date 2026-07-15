@@ -2,13 +2,8 @@
 # Customizations/functions related to docker #
 ##############################################
 
-source /opt/vivado-docker/.xilinx_docker
-source /opt/cms-cvmfs-docker/.cms-cvmfs-docker
-source /opt/TreeMaker/.treemaker_docker
-alias dxrd='cvmfs_docker -m "cms.cern.ch oasis.opensciencegrid.org" -l `pwd` -r /root/local_mount/'
 alias docker_cleanup='docker rmi $(docker images -f "dangling=true" -q)'
 alias docker_list_dangling='docker images -f "dangling=true" -q'
-alias emjdockercreate='cvmfs_docker -d -v -s -m "cms.cern.ch oasis.opensciencegrid.org sft.cern.ch" -l /Users/aperloff/Documents/CMS/EXO/EMJAnalysis/ -r /home/cmsuser/EMJAnalysis/ -n EMJAnalysis'
 
 function docker_get_image_size {
     local res=""
