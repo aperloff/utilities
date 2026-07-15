@@ -28,6 +28,8 @@ case "${unameOut}" in
     Darwin*)
         alias get_gitlab_token='security find-generic-password -l "GitLab Token (Podman)" -w | pbcopy'
         ;;
+    Linux*)
+	;;
     *)  echo "Unknown OS (${unameOut})"
 esac
 
