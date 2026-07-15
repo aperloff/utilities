@@ -53,14 +53,16 @@ export KUBECONFIG=$KUBECONFIG:$HOME/.kube/config-servicex:$HOME/.kube/config-ser
 # Homebrew
 #
 # Set PATH, MANPATH, etc., for Homebrew.
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew config
+export HOMEBREW_CASK_OPTS="--appdir=~/Applications"
+export PATH=$HOME/local/bin:$PATH
 
 #
 # Pyenv (Homebrew Installed)
 #
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+#export PYENV_ROOT="$HOME/.pyenv"
+#command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+#eval "$(pyenv init -)"
 
 #
 # Ruby (Homebrew)
