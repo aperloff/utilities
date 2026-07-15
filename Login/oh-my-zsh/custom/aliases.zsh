@@ -19,6 +19,19 @@ alias kinit='/usr/bin/kinit'
 alias kinit_keychain='/usr/bin/kinit --keychain'
 
 #
+# OS specific aliases
+#
+# References: https://stackoverflow.com/questions/3466166/how-to-check-if-running-in-cygwin-mac-or-linux
+# Possible platforms: Linux*, Darwin*, CYGWIN*, MINGW*, MSYS_NT*
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Darwin*)
+        alias get_gitlab_token='security find-generic-password -l "GitLab Token (Podman)" -w | pbcopy'
+        ;;
+    *)  echo "Unknown OS (${unameOut})"
+esac
+
+#
 # ls aliases
 #
 # Some of these will override the default aliases from oh-my-zsh
@@ -32,6 +45,15 @@ alias lla='ls -alFh'
 #
 #alias root='root6 -l'
 #pushd /usr/local >/dev/null; . bin/thisroot.sh; popd >/dev/null
+
+#
+# Julia
+#
+alias juliaserverno='julia -t auto --startup-file=no -e "using DaemonMode; serve(async=true)" &'
+alias juliaserveryes='julia -t auto --startup-file=yes -e "using DaemonMode; serve(async=true)" &'
+alias juliaclientno='julia --startup-file=no -e "using DaemonMode; runargs()"'
+alias juliaclientyes='julia --startup-file=yes -e "using DaemonMode; runargs()"'
+alias julia8='julia -t 8,1 --gcthreads=8,1'
 
 #
 # Script aliases
